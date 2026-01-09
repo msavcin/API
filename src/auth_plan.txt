@@ -1,0 +1,1 @@
+JWT tabanlı kimlik doğrulama ve kullanıcı yönetimi için yeni bir model ve endpointler eklenecek. Sonrasında campgrounds endpointleri korumalı hale getirilecek.
