@@ -8,6 +8,7 @@ const Announcement = sequelize.define('Announcement', {
   message: { type: DataTypes.TEXT, allowNull: false },
   created_by: { type: DataTypes.INTEGER, allowNull: false },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   valilik_id: { type: DataTypes.STRING },
   keywords: { type: DataTypes.STRING },
   source_url: { type: DataTypes.STRING },

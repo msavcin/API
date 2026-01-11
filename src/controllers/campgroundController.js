@@ -168,7 +168,7 @@ exports.listCampgrounds = async (req, res) => {
   // Kullanıcı kimliği ve policy logu
   console.log('[LIST][AUTH] req.user:', req.user, 'query:', req.query);
   try {
-    const { source_id, owner_id, updated_after, type } = req.query;
+    const { source_id, owner_id, updated_after, type, deleted } = req.query;
     const where = {};
     if (source_id !== undefined) where.source_id = source_id;
     if (updated_after) {
@@ -185,6 +185,14 @@ exports.listCampgrounds = async (req, res) => {
       // Birden fazla type gelirse diziye çevir
       let typeArr = Array.isArray(type) ? type : [type];
       where.type = { [Op.contains]: typeArr };
+    }
+    // deleted parametresi ile filtreleme
+    if (deleted !== undefined) {
+      if (deleted === 'true' || deleted === '1' || deleted === 1 || deleted === true) {
+        where.deleted = 1;
+      } else if (deleted === 'false' || deleted === '0' || deleted === 0 || deleted === false) {
+        where.deleted = 0;
+      }
     }
     // Kullanıcı id'si
     const userId = req.user && req.user.id;
@@ -210,6 +218,18 @@ exports.listCampgrounds = async (req, res) => {
     }));
     campgrounds = campgrounds.filter(Boolean);
 
+    // Delta Sync: silinen kayıtları ekle
+    let deletedRecords = [];
+    if (req.query.updated_after && req.query.include_deleted === 'true') {
+      const CampgroundDeleted = require('../models/campgroundDeleted');
+      deletedRecords = await CampgroundDeleted.findAll({
+        where: {
+          deleted_at: { [Op.gt]: new Date(req.query.updated_after) }
+        },
+        attributes: ['external_id', ['deleted_at', 'updated_at'], [db.sequelize.literal('1'), 'deleted']]
+      });
+    }
+
     // owner_username ekle
     const User = require('../models/user');
     const ownerIds = [...new Set(campgrounds.map(cg => Number(cg.owner_id)).filter(Boolean))];
@@ -218,13 +238,15 @@ exports.listCampgrounds = async (req, res) => {
     const campgroundsWithOwner = campgrounds.map(cg => {
       const ownerId = Number(cg.owner_id);
       const ownerUsername = ownerMap[ownerId] || null;
-      console.log(`[CAMPGROUND][OWNER] id: ${ownerId} -> username: ${ownerUsername}`);
       return {
         ...cg.toJSON(),
         owner_username: ownerUsername
       };
     });
-    res.json(campgroundsWithOwner);
+
+    // Silinen kayıtları da ekle
+    const allRecords = [...campgroundsWithOwner, ...deletedRecords.map(dr => dr.toJSON())];
+    res.json(allRecords);
   } catch (err) {
     res.status(500).json({ error: 'Kamp alanları listelenemedi', detail: err.message });
   }
@@ -271,9 +293,15 @@ exports.deleteCampground = async (req, res) => {
     if (req.body.updated_at && new Date(req.body.updated_at) < new Date(campground.updated_at)) {
       return res.status(409).json({ error: 'Çakışma: Sunucudaki kayıt daha güncel', server_updated_at: campground.updated_at });
     }
-  console.log('[SYNC][DELETE][STEP] Veritabanından siliniyor:', { id: campground.id, external_id: campground.external_id });
-  await campground.destroy();
-  res.json({ message: 'Kamp alanı silindi' });
+    // Silinen kaydı campgrounds_deleted tablosuna ekle
+    const CampgroundDeleted = require('../models/campgroundDeleted');
+    await CampgroundDeleted.create({
+      external_id: campground.external_id,
+      deleted_at: new Date()
+    });
+    console.log('[SYNC][DELETE][STEP] Veritabanından siliniyor:', { id: campground.id, external_id: campground.external_id });
+    await campground.destroy();
+    res.json({ message: 'Kamp alanı silindi' });
   } catch (err) {
     res.status(500).json({ error: 'Kamp alanı silinemedi', detail: err.message });
   }

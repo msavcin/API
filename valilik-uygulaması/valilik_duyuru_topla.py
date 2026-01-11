@@ -274,7 +274,7 @@ def eski_valilik_duyurularini_pasif_yap():
                 # Sonra pasife al
                 cur.execute("""
                     UPDATE announcements
-                    SET aktif = FALSE
+                    SET aktif = FALSE, updated_at = NOW()
                     WHERE source = %s
                     AND aktif = TRUE
                     AND (
@@ -342,7 +342,8 @@ def duyuru_kaydet(duyuru_bilgisi):
                         link = EXCLUDED.link,
                         source_url = EXCLUDED.source_url,
                         islenme_tarihi = EXCLUDED.islenme_tarihi,
-                        message = EXCLUDED.message
+                        message = EXCLUDED.message,
+                        updated_at = NOW()
                     RETURNING id
                 """, (
                     duyuru_bilgisi['valilik_id'],

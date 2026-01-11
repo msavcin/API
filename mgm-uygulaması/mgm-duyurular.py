@@ -402,19 +402,21 @@ def veritabanina_yaz(valilik_id, date, title, keywords, link, source_url, messag
             update_query = """
             UPDATE announcements 
             SET keywords = %s, date = %s, title = %s, source_url = %s, message = %s, 
-                islenme_tarihi = %s, baslama_zamani = %s, bitis_zamani = %s, aktif = %s
+                islenme_tarihi = %s, baslama_zamani = %s, bitis_zamani = %s, aktif = %s, updated_at = %s
             WHERE id = %s
             """
+            now_time = datetime.now()
             cursor.execute(update_query, (
                 json.dumps(keywords) if keywords else None,
                 date,
                 title,
                 source_url,
                 message,
-                datetime.now(),
+                now_time,
                 baslama_zamani,
                 bitis_zamani,
                 yeni_aktif,
+                now_time,
                 existing_record[0]
             ))
             conn.commit()
@@ -506,10 +508,10 @@ def eski_duyurulari_temizle():
             for kayit in eski_kayitlar:
                 print(f"       - ID: {kayit[0]}, Başlık: {kayit[1][:50]}, Bitiş: {kayit[2]}")
             
-            # Aktif durumunu false yap
+            # Aktif durumunu false yap ve updated_at güncelle
             cursor.execute("""
                 UPDATE announcements 
-                SET aktif = FALSE 
+                SET aktif = FALSE, updated_at = NOW() 
                 WHERE bitis_zamani IS NOT NULL 
                 AND bitis_zamani < %s 
                 AND aktif = TRUE

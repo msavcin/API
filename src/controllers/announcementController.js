@@ -97,10 +97,27 @@ exports.listAnnouncements = async (req, res) => {
   const CommunityMember = db.CommunityMember || require('../models/communityMember');
   const user = req.user;
   let allowedCommunityIds = [];
+  const { community_id, valilik_id, include_deleted } = req.query;
   // Superadmin ise tüm duyuruları görebilir
+  let where = {};
   if (user && user.role === 'superadmin') {
-    const announcements = await Announcement.findAll({ where: { aktif: true } });
-    return res.json(announcements);
+    if (include_deleted === 'true' || include_deleted === true) {
+      // Tüm kayıtlar (aktif ve silinmiş)
+      where = {};
+    } else {
+      where = { aktif: true };
+    }
+    if (community_id && valilik_id) {
+      where = { ...where, community_id: Number(community_id), valilik_id: String(valilik_id) };
+    } else if (community_id) {
+      where = { ...where, community_id: Number(community_id) };
+    } else if (valilik_id) {
+      where = { ...where, valilik_id: String(valilik_id) };
+    }
+    const announcements = await Announcement.findAll({ where });
+    // Her kayıtta aktif ve deleted flag'i ekle
+    const result = announcements.map(a => ({ ...a.toJSON(), deleted: a.aktif === false, aktif: !!a.aktif }));
+    return res.json(result);
   }
   // Kullanıcının aktif üyesi olduğu toplulukları bul
   const memberships = await CommunityMember.findAll({
@@ -110,11 +127,14 @@ exports.listAnnouncements = async (req, res) => {
   allowedCommunityIds = memberships.map(m => m.community_id);
   // Ayrıca community_id=0 (genel) olanlar da dahil
   allowedCommunityIds.push(0);
-  // İsteğe bağlı olarak query'den community_id gelirse, sadece o topluluğu filtrele
-  const { community_id, valilik_id } = req.query;
-  let where = { aktif: true };
+  if (include_deleted === 'true' || include_deleted === true) {
+    // Aktif ve silinmiş kayıtlar
+    where = { community_id: allowedCommunityIds };
+  } else {
+    // Sadece aktif kayıtlar
+    where = { aktif: true, community_id: allowedCommunityIds };
+  }
   if (community_id && valilik_id) {
-    // Her ikisi de varsa, ikisine de uyanları döndür
     where = { ...where, community_id: Number(community_id), valilik_id: String(valilik_id) };
   } else if (community_id) {
     const cid = Number(community_id);
@@ -124,15 +144,11 @@ exports.listAnnouncements = async (req, res) => {
     where = { ...where, community_id: cid };
   } else if (valilik_id) {
     where = { ...where, valilik_id: String(valilik_id) };
-  } else {
-    // Hiçbiri yoksa, sadece kullanıcının topluluklarına ait duyurular
-    where = { aktif: true, community_id: allowedCommunityIds };
   }
-  // Eğer attributes ile özel alan seçilecekse, community_id ve valilik_id mutlaka eklenmeli
-  // Örnek:
-  // const announcements = await Announcement.findAll({ where, attributes: ['id', 'community_id', 'valilik_id', 'title', 'message', ...] });
   const announcements = await Announcement.findAll({ where });
-  res.json(announcements);
+  // Her kayıtta aktif ve deleted flag'i ekle
+  const result = announcements.map(a => ({ ...a.toJSON(), deleted: a.aktif === false, aktif: !!a.aktif }));
+  res.json(result);
 };
 
 // Tek bir duyuru detay
@@ -222,7 +238,7 @@ exports.updateAnnouncement = async (req, res) => {
     etkinlik_tarihi = `${yil}-${ay}-${gun}`;
     if (isNaN(Date.parse(etkinlik_tarihi))) etkinlik_tarihi = null;
   }
-  await announcement.update({ ...req.body, etkinlik_tarihi, baslama_zamani, bitis_zamani, active });
+  await announcement.update({ ...req.body, etkinlik_tarihi, baslama_zamani, bitis_zamani, active, updated_at: new Date() });
   res.json(announcement);
 };
 
@@ -238,8 +254,8 @@ exports.deleteAnnouncement = async (req, res) => {
   const user = await User.findByPk(req.user.id);
   if (!user) return res.status(403).json({ error: 'Kullanıcı bulunamadı' });
   if (user.role === 'superadmin') {
-    await announcement.destroy();
-    return res.status(204).send();
+    await announcement.update({ aktif: false, updated_at: new Date() });
+    return res.status(200).json({ message: 'Duyuru silindi (soft delete)' });
   }
   // Community_members tablosunda ilgili toplulukta leader mı?
   const CommunityMember = db.CommunityMember || require('../models/communityMember');
@@ -248,8 +264,8 @@ exports.deleteAnnouncement = async (req, res) => {
     if (announcement.created_by !== user.id) {
       return res.status(403).json({ error: 'Lider sadece kendi oluşturduğu duyuruyu silebilir.' });
     }
-    await announcement.destroy();
-    return res.status(204).send();
+    await announcement.update({ aktif: false, updated_at: new Date() });
+    return res.status(200).json({ message: 'Duyuru silindi (soft delete)' });
   }
   // Diğer roller için silme izni yok
   return res.status(403).json({ error: 'Bu işlemi yapmaya yetkiniz yok.' });
