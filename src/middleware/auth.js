@@ -8,10 +8,20 @@ const JWT_SECRET = process.env.JWT_SECRET || 'demo_secret_key';
 function authMiddleware(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Token gerekli' });
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Token gerekli' });
+  }
+  
+  // Token formatını kontrol et (malformed token'lar için)
+  if (typeof token !== 'string' || token.length < 10) {
+    console.warn('[AUTH][JWT] Geçersiz token formatı');
+    return res.status(403).json({ error: 'Geçersiz token' });
+  }
+  
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      console.warn('[AUTH][JWT] Geçersiz token:', token, 'Hata:', err);
+      console.warn('[AUTH][JWT] Token doğrulama hatası:', err.name);
       return res.status(403).json({ error: 'Geçersiz token' });
     }
     req.user = user;

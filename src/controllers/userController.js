@@ -189,6 +189,8 @@ exports.getMe = async (req, res) => {
     role: user.role === 'superadmin' ? 'superadmin' : (member ? member.role : user.role),
     avatar_url: user.avatar_url || null,
     trial_user: user.trial_user,
+    offline_enabled: user.offline_enabled || false,
+    offline_radius_km: user.offline_radius_km || 20,
     createdAt: user.createdAt,
     created_at: user.created_at,
     member: member ? {

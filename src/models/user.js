@@ -11,6 +11,8 @@ const User = sequelize.define('User', {
   avatar_url: { type: DataTypes.STRING },
   trial_user: { type: DataTypes.BOOLEAN, defaultValue: false },
   agreement_accepted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  offline_enabled: { type: DataTypes.BOOLEAN, defaultValue: false },
+  offline_radius_km: { type: DataTypes.INTEGER, defaultValue: 20 },
 }, {
   tableName: 'users',
   timestamps: true,

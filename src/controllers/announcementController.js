@@ -89,6 +89,7 @@ exports.listByValilikId = async (req, res) => {
   res.json(announcements);
 };
 const db = require('../models');
+const { Op } = require('sequelize');
 const Announcement = db.Announcement || require('../models/announcement');
 
 // Tüm duyuruları listele (opsiyonel: topluluk filtresi)
@@ -97,11 +98,15 @@ exports.listAnnouncements = async (req, res) => {
   const CommunityMember = db.CommunityMember || require('../models/communityMember');
   const user = req.user;
   let allowedCommunityIds = [];
-  const { community_id, valilik_id, include_deleted } = req.query;
+  const { community_id, valilik_id, include_deleted, updated_after } = req.query;
+  
   // Superadmin ise tüm duyuruları görebilir
   let where = {};
   if (user && user.role === 'superadmin') {
-    if (include_deleted === 'true' || include_deleted === true) {
+    // updated_after parametresi varsa tüm kayıtları döndür (deleted dahil)
+    if (updated_after) {
+      where = { updated_at: { [Op.gte]: new Date(updated_after) } };
+    } else if (include_deleted === 'true' || include_deleted === true) {
       // Tüm kayıtlar (aktif ve silinmiş)
       where = {};
     } else {
@@ -114,7 +119,7 @@ exports.listAnnouncements = async (req, res) => {
     } else if (valilik_id) {
       where = { ...where, valilik_id: String(valilik_id) };
     }
-    const announcements = await Announcement.findAll({ where });
+    const announcements = await Announcement.findAll({ where, order: [['updated_at', 'DESC']] });
     // Her kayıtta aktif ve deleted flag'i ekle
     const result = announcements.map(a => ({ ...a.toJSON(), deleted: a.aktif === false, aktif: !!a.aktif }));
     return res.json(result);
@@ -127,13 +132,21 @@ exports.listAnnouncements = async (req, res) => {
   allowedCommunityIds = memberships.map(m => m.community_id);
   // Ayrıca community_id=0 (genel) olanlar da dahil
   allowedCommunityIds.push(0);
-  if (include_deleted === 'true' || include_deleted === true) {
+  
+  // updated_after parametresi varsa tüm kayıtları döndür (deleted dahil)
+  if (updated_after) {
+    where = { 
+      community_id: allowedCommunityIds,
+      updated_at: { [Op.gte]: new Date(updated_after) }
+    };
+  } else if (include_deleted === 'true' || include_deleted === true) {
     // Aktif ve silinmiş kayıtlar
     where = { community_id: allowedCommunityIds };
   } else {
     // Sadece aktif kayıtlar
     where = { aktif: true, community_id: allowedCommunityIds };
   }
+  
   if (community_id && valilik_id) {
     where = { ...where, community_id: Number(community_id), valilik_id: String(valilik_id) };
   } else if (community_id) {
@@ -145,7 +158,7 @@ exports.listAnnouncements = async (req, res) => {
   } else if (valilik_id) {
     where = { ...where, valilik_id: String(valilik_id) };
   }
-  const announcements = await Announcement.findAll({ where });
+  const announcements = await Announcement.findAll({ where, order: [['updated_at', 'DESC']] });
   // Her kayıtta aktif ve deleted flag'i ekle
   const result = announcements.map(a => ({ ...a.toJSON(), deleted: a.aktif === false, aktif: !!a.aktif }));
   res.json(result);
