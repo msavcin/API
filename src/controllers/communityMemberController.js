@@ -50,7 +50,7 @@ exports.listMembers = async (req, res) => {
   }
   const members = await CommunityMember.findAll({
     where,
-    include: [{ model: User, as: 'user', attributes: ['id', 'name', 'username', 'email'] }]
+    include: [{ model: User, as: 'user', attributes: ['id', 'name', 'username', 'email', 'avatar_url'] }]
   });
   res.json(members);
 };

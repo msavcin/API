@@ -34,10 +34,22 @@ exports.searchUsers = async (req, res) => {
   const { username } = req.query;
   if (!username) return res.status(400).json({ error: 'Arama terimi gerekli' });
   const users = await User.findAll({
-    where: { username: { [Op.iLike]: `%${username}%` } },
-    attributes: ['id', 'username']
+    where: {
+      [Op.or]: [
+        { username: { [Op.iLike]: `%${username}%` } },
+        { name: { [Op.iLike]: `%${username}%` } }
+      ]
+    },
+    attributes: ['id', 'username', 'name', 'email', 'avatar_url']
   });
-  res.json(users);
+  const result = users.map(u => ({
+    userId: u.id,
+    username: u.username,
+    name: u.name,
+    email: u.email,
+    avatarUrl: u.avatar_url
+  }));
+  res.json(result);
 };
 
 // Arkadaşlık isteği gönder
