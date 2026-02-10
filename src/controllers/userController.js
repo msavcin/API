@@ -62,7 +62,8 @@ exports.register = async (req, res) => {
     password_hash: hash,
     role: 'user',
     trial_user: req.body.trial_user === true,
-    agreement_accepted: agreement_accepted === true // frontendden bool gelirse true, yoksa false
+    agreement_accepted: agreement_accepted === true, // frontendden bool gelirse true, yoksa false
+    offline_enabled: req.body.offline_enabled === true
   });
   // Eğer realCommunityId varsa, topluluğa katılım isteği oluştur
   if (realCommunityId !== undefined) {
@@ -81,7 +82,7 @@ exports.register = async (req, res) => {
   // Kayıt başarılıysa doğrulama kodunu sil
   await EmailVerificationCode.destroy({ where: { email } });
   const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '10d' });
-  res.status(201).json({ id: user.id, name: user.name, username: user.username, email: user.email, token });
+  res.status(201).json({ id: user.id, name: user.name, username: user.username, email: user.email, offline_enabled: user.offline_enabled, token });
 };
 
 const db = require('../models');
@@ -110,7 +111,7 @@ exports.login = async (req, res) => {
     user = await User.findOne({ where: { email } });
   }
   if (!user) return res.status(400).json({ error: 'Kullanıcı bulunamadı' });
-  // trial_user ise ve 7 günü geçtiyse otomatik guest yap ve forceLogout flag'i hazırla
+  // trial_user ise ve 30 günü geçtiyse otomatik guest yap ve forceLogout flag'i hazırla
   let forceLogout = false;
   const createdDate = user.createdAt || user.created_at;
   if (user.role === 'user' && user.trial_user && createdDate) {
@@ -118,8 +119,9 @@ exports.login = async (req, res) => {
     const created = new Date(createdDate);
     const diffDays = (now - created) / (1000 * 60 * 60 * 24);
     if (diffDays > 30) {
-      await user.update({ role: 'guest' });
+      await user.update({ role: 'guest', offline_enabled: false });
       user.role = 'guest';
+      user.offline_enabled = false;
       forceLogout = true;
     }
   }

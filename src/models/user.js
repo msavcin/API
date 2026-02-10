@@ -13,6 +13,11 @@ const User = sequelize.define('User', {
   agreement_accepted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   offline_enabled: { type: DataTypes.BOOLEAN, defaultValue: false },
   offline_radius_km: { type: DataTypes.INTEGER, defaultValue: 20 },
+  subscription_platform: { type: DataTypes.STRING },
+  subscription_product_id: { type: DataTypes.STRING },
+  subscription_transaction_id: { type: DataTypes.STRING },
+  subscription_expires_at: { type: DataTypes.DATE },
+  subscription_is_active: { type: DataTypes.BOOLEAN, defaultValue: false },
 }, {
   tableName: 'users',
   timestamps: true,
