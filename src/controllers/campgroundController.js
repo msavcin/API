@@ -13,7 +13,9 @@ exports.createCampground = async (req, res) => {
 
     let {
       name, latitude, longitude, type, description, website, phone, opening_hours, capacity, fee, status, rating, review_count, price_range,
-      facilities, accessibility, social_media, amenities, images, tags, booking_url, contact_email, last_verified, visibility, owner_id, created_at, updated_at, external_id, source_id = 0, photo_links
+      facilities, accessibility, social_media, amenities, images, tags, booking_url, contact_email, last_verified, visibility, owner_id, community_id,
+      friend_user_ids,
+      created_at, updated_at, external_id, source_id = 0, photo_links
     } = req.body;
 
 
@@ -39,9 +41,36 @@ exports.createCampground = async (req, res) => {
     if (!visibility) visibility = 'private';
   }
 
-
-  // STRING/TEXT olan alanlar için JSON.stringify
-  if (facilities && typeof facilities !== 'string') facilities = JSON.stringify(facilities);
+  // community visibility logic: assign community_id automatically and force updated_at
+  if (visibility === 'community') {
+    const CommunityMember = db.CommunityMember || require('../models/communityMember');
+    try {
+      const membership = await CommunityMember.findOne({ where: { user_id: req.user && req.user.id } });
+      if (membership) {
+        community_id = membership.community_id;
+      } else {
+        // user asked community visibility but has no community membership
+        return res.status(400).json({ error: 'Kullanıcı herhangi bir topluluğa üye değil' });
+      }
+    } catch (e) {
+      console.error('[CREATE][COMMUNITY] error fetching membership', e);
+      return res.status(500).json({ error: 'Topluluk bilgisi alınamadı' });
+    }
+    // updated_at must be fresh when turning visibility=community
+    updated_at = new Date().toISOString();
+  }
+  // friends visibility: only use explicitly provided friend_user_ids, ignore other friendships
+  if (visibility === 'friends') {
+    // ensure it's an array
+    if (friend_user_ids && !Array.isArray(friend_user_ids)) {
+      try { friend_user_ids = JSON.parse(friend_user_ids); } catch (e) { friend_user_ids = []; }
+    }
+    if (!friend_user_ids) {
+      friend_user_ids = [];
+    }
+    // updated_at should reflect new visibility
+    updated_at = new Date().toISOString();
+  }
   if (accessibility && typeof accessibility !== 'string') accessibility = JSON.stringify(accessibility);
   if (social_media && typeof social_media !== 'string') social_media = JSON.stringify(social_media);
   if (amenities && typeof amenities !== 'string') amenities = JSON.stringify(amenities);
@@ -149,12 +178,14 @@ exports.createCampground = async (req, res) => {
     }
     console.log('[CREATE][DB] amenities veritabanına yazılacak değer:', amenities);
     const campground = await Campground.create({
-      name, latitude, longitude, type, description, website, phone, opening_hours, capacity, fee, status, rating, review_count, price_range, facilities, accessibility, social_media, amenities, images, tags, booking_url, contact_email, last_verified, visibility, owner_id, created_at, updated_at, external_id, source_id, photo_links
+      name, latitude, longitude, type, description, website, phone, opening_hours, capacity, fee, status, rating, review_count, price_range, facilities, accessibility, social_media, amenities, images, tags, booking_url, contact_email, last_verified, visibility, community_id, owner_id, friend_user_ids: friend_user_ids && JSON.stringify(friend_user_ids), created_at, updated_at, external_id, source_id, photo_links
     });
 
     // Eğer friend_user_ids varsa, erişim tablosuna ekle
-    const { friend_user_ids } = req.body;
     if (Array.isArray(friend_user_ids) && friend_user_ids.length > 0) {
+      const CampgroundFriendAccess = db.CampgroundFriendAccess;
+      const accessRecords = friend_user_ids.map(fid => ({ campground_id: campground.id, friend_user_id: parseInt(fid, 10) }));
+      await CampgroundFriendAccess.bulkCreate(accessRecords);
     }
   console.log('[CREATE][RESPONSE] amenities:', campground.amenities);
   res.status(201).json(campground.toJSON());
@@ -168,9 +199,10 @@ exports.listCampgrounds = async (req, res) => {
   // Kullanıcı kimliği ve policy logu
   console.log('[LIST][AUTH] req.user:', req.user, 'query:', req.query);
   try {
-    const { source_id, owner_id, updated_after, type, deleted } = req.query;
+    const { source_id, owner_id, updated_after, type, deleted, community_id } = req.query;
     const where = {};
     if (source_id !== undefined) where.source_id = source_id;
+    if (community_id !== undefined) where.community_id = community_id;
     if (updated_after) {
       where.updated_at = { [Op.gt]: new Date(updated_after) };
     }
@@ -208,6 +240,15 @@ exports.listCampgrounds = async (req, res) => {
           const accesses = await CampgroundFriendAccess.findAll({ where: { campground_id: cg.id } });
           const friendUserIds = accesses.map(a => a.friend_user_id);
           if (friendUserIds.includes(userId)) return cg;
+          return null;
+        }
+        if (cg.visibility === 'community') {
+          if (req.user && req.user.role === 'superadmin') return cg;
+          if (!userId) return null;
+          const CommunityMember = db.CommunityMember;
+          if (!cg.community_id) return null;
+          const membership = await CommunityMember.findOne({ where: { user_id: userId, community_id: cg.community_id } });
+          if (membership) return cg;
           return null;
         }
         return cg;
@@ -366,7 +407,8 @@ exports.updateCampground = async (req, res) => {
     const updatableFields = [
       'name', 'latitude', 'longitude', 'type', 'description', 'website', 'phone', 'opening_hours', 'capacity', 'fee',
       'status', 'rating', 'review_count', 'price_range', 'facilities', 'accessibility', 'social_media', 'amenities',
-      'images', 'tags', 'booking_url', 'contact_email', 'last_verified', 'visibility', 'external_id', 'source_id', 'photo_links'
+      'images', 'tags', 'booking_url', 'contact_email', 'last_verified', 'visibility', 'external_id', 'source_id', 'photo_links',
+      'friend_user_ids'
     ];
 
     // amenities, images, tags, facilities, accessibility, social_media için uygun tip dönüşümleri
@@ -400,6 +442,21 @@ exports.updateCampground = async (req, res) => {
             value = JSON.stringify(value);
           }
         }
+        if (field === 'friend_user_ids') {
+          if (Array.isArray(value)) {
+            // ensure JSON string format
+            campground[field] = JSON.stringify(value);
+            return;
+          } else if (typeof value === 'string') {
+            // leave string but ensure valid JSON
+            try { JSON.parse(value); } catch (e) { value = JSON.stringify([]); }
+            campground[field] = value;
+            return;
+          } else {
+            campground[field] = JSON.stringify([]);
+            return;
+          }
+        }
         campground[field] = value;
       }
     });
@@ -409,6 +466,54 @@ exports.updateCampground = async (req, res) => {
       campground.updated_at = new Date().toISOString();
     } else {
       campground.updated_at = req.body.updated_at;
+    }
+
+    // if visibility changed to community or friends during update, handle ids and timestamp
+    if (req.body.visibility === 'community') {
+      const CommunityMember = db.CommunityMember || require('../models/communityMember');
+      try {
+        const membership = await CommunityMember.findOne({ where: { user_id: owner_id } });
+        if (membership) {
+          campground.community_id = membership.community_id;
+        } else {
+          return res.status(400).json({ error: 'Kullanıcı herhangi bir topluluğa üye değil' });
+        }
+      } catch (e) {
+        console.error('[UPDATE][COMMUNITY] error fetching membership', e);
+        return res.status(500).json({ error: 'Topluluk bilgisi alınamadı' });
+      }
+      campground.updated_at = new Date().toISOString();
+    } else if (req.body.visibility === 'friends') {
+      // expect provided friend_user_ids list
+      let ids = req.body.friend_user_ids;
+      if (ids && !Array.isArray(ids)) {
+        try { ids = JSON.parse(ids); } catch (e) { ids = []; }
+      }
+      if (!ids) ids = [];
+      campground.friend_user_ids = JSON.stringify(ids);
+      // sync access table to provided list
+      try {
+        const CampgroundFriendAccess = db.CampgroundFriendAccess;
+        await CampgroundFriendAccess.destroy({ where: { campground_id: campground.id } });
+        const accessRecords = ids.map(fid => ({ campground_id: campground.id, friend_user_id: parseInt(fid, 10) }));
+        if (accessRecords.length) await CampgroundFriendAccess.bulkCreate(accessRecords);
+      } catch (e) {
+        console.error('[UPDATE][FRIENDS] error syncing access records', e);
+      }
+      campground.updated_at = new Date().toISOString();
+    } else if (req.body.visibility && req.body.visibility !== 'community') {
+      // clear community_id if visibility moved away
+      campground.community_id = null;
+    }
+    if (req.body.visibility && req.body.visibility !== 'friends') {
+      campground.friend_user_ids = JSON.stringify([]);
+      // remove any lingering friend access entries
+      try {
+        const CampgroundFriendAccess = db.CampgroundFriendAccess;
+        await CampgroundFriendAccess.destroy({ where: { campground_id: campground.id } });
+      } catch (e) {
+        console.error('[UPDATE][FRIENDS] error clearing access records', e);
+      }
     }
     // Güncellenen alanları ve tiplerini logla
     const updatedFields = {};

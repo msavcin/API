@@ -9,7 +9,7 @@ import os
 
 # --- Ayarları yap ---
 start_date = "2025-01-01"  # YYYY-MM-DD
-end_date = "2025-12-31"
+end_date = "2050-12-31"
 keywords = ["Orman Yangınları","ORMAN YANGINLARI", "Trafik Tedbirleri"]
 
 start_dt = datetime.strptime(start_date, "%Y-%m-%d")

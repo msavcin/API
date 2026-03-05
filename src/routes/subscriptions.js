@@ -4,6 +4,12 @@ const subscriptionController = require('../controllers/subscriptionController');
 const { authMiddleware } = require('../middleware/auth');
 
 /**
+ * GET /node/subscriptions/prices
+ * Platform ve plan bazlı abonelik fiyatlarını döner (public)
+ */
+router.get('/prices', subscriptionController.getPrices);
+
+/**
  * POST /node/subscriptions/verify
  * Abonelik receipt/token doğrulama
  */

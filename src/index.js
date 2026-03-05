@@ -42,6 +42,8 @@ app.use('/node/friends', bodyParser.json(), require('./routes/friends'));
 app.use('/node/checklst_shares', bodyParser.json(), require('./routes/checklst_shares'));
 app.use('/node/campground_friend_access', bodyParser.json(), require('./routes/campground_friend_access'));
 app.use('/node/subscriptions', bodyParser.json(), require('./routes/subscriptions'));
+// License/public key endpoint
+app.use('/node/licenses', bodyParser.json(), require('./routes/licenses'));
 
 // Sunucuyu başlat
 const PORT = process.env.PORT || 3000;

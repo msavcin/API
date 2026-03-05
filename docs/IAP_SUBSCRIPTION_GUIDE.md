@@ -33,8 +33,9 @@ APPLE_SHARED_SECRET=your_apple_shared_secret
 # Google IAP
 GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
 
-# Android Package Name
-ANDROID_PACKAGE_NAME=com.kampdefterim.app
+# Package Names / Bundle IDs
+ANDROID_PACKAGE_NAME=com.spondylus.boltexponativewind
+IOS_BUNDLE_ID=com.spondylus.kampdefterim
 
 # Environment
 NODE_ENV=production
@@ -54,8 +55,11 @@ NODE_ENV=production
 
 ## API Endpoints
 
+**Base URL:** `https://botanikakademi.com`
+
 ### 1. Subscription Doğrulama
-**Endpoint:** `POST /node/subscriptions/verify`
+**Endpoint:** `POST /node/subscriptions/verify`  
+**Full URL:** `https://botanikakademi.com/node/subscriptions/verify`
 
 **Headers:**
 ```
@@ -67,7 +71,7 @@ Content-Type: application/json
 ```json
 {
   "platform": "ios",
-  "productId": "com.kampdefterim.monthly",
+  "productId": "com.spondylus.kampdefterim.monthly",
   "transactionReceipt": "base64_encoded_receipt_data",
   "transactionId": "1000000123456789"
 }
@@ -77,7 +81,7 @@ Content-Type: application/json
 ```json
 {
   "platform": "android",
-  "productId": "com.kampdefterim.monthly",
+  "productId": "com.spondylus.kampdefterim.monthly",
   "purchaseToken": "google_purchase_token",
   "transactionId": "GPA.1234-5678-9012-34567"
 }
@@ -88,7 +92,7 @@ Content-Type: application/json
 {
   "success": true,
   "subscription": {
-    "productId": "com.kampdefterim.monthly",
+    "productId": "com.spondylus.kampdefterim.monthly",
     "expiresDate": "2026-03-10T12:00:00.000Z",
     "isActive": true
   }
@@ -96,7 +100,8 @@ Content-Type: application/json
 ```
 
 ### 2. Subscription Durumu Sorgulama
-**Endpoint:** `GET /node/subscriptions/status`
+**Endpoint:** `GET /node/subscriptions/status`  
+**Full URL:** `https://botanikakademi.com/node/subscriptions/status`
 
 **Headers:**
 ```
@@ -108,7 +113,7 @@ Authorization: Bearer <JWT_TOKEN>
 {
   "subscription": {
     "platform": "ios",
-    "productId": "com.kampdefterim.monthly",
+    "productId": "com.spondylus.kampdefterim.monthly",
     "expiresAt": "2026-03-10T12:00:00.000Z",
     "isActive": true,
     "offlineEnabled": true,
@@ -124,11 +129,21 @@ Sistem, product ID'lere göre otomatik olarak offline radius değerlerini ayarla
 - **Monthly subscription** (`monthly` içeren product ID): `offline_radius_km = 20`
 - **Yearly subscription** (`yearly` içeren product ID): `offline_radius_km = 50`
 
-Örnek product ID'ler:
+### Platform Bazlı Product ID'ler:
+
+**iOS (Bundle ID: com.spondylus.kampdefterim):**
 ```
-com.kampdefterim.monthly
-com.kampdefterim.yearly
+com.spondylus.kampdefterim.monthly
+com.spondylus.kampdefterim.yearly
 ```
+
+**Android (Package Name: com.spondylus.boltexponativewind):**
+```
+com.spondylus.boltexponativewind.monthly
+com.spondylus.boltexponativewind.yearly
+```
+
+> **Not:** iOS ve Android'de farklı package name/bundle ID kullanılmaktadır. Backend her iki platformdan gelen istekleri desteklemektedir.
 
 ## CRON Job - Süresi Dolan Abonelikleri Kontrol Etme
 
@@ -168,14 +183,28 @@ Development ortamında `NODE_ENV=development` olarak ayarlanırsa, IAP otomatik 
 2. Android için: Google Play Console'da test kullanıcısı ekleyin
 
 ### Manuel Test
+
+**Production:**
 ```bash
-# Test receipt ile istek gönderin
+curl -X POST https://botanikakademi.com/node/subscriptions/verify \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "ios",
+    "productId": "com.spondylus.kampdefterim.monthly",
+    "transactionReceipt": "test_receipt_data",
+    "transactionId": "test_transaction_123"
+  }'
+```
+
+**Local Development:**
+```bash
 curl -X POST http://localhost:3000/node/subscriptions/verify \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "platform": "ios",
-    "productId": "com.kampdefterim.monthly",
+    "productId": "com.spondylus.kampdefterim.monthly",
     "transactionReceipt": "test_receipt_data",
     "transactionId": "test_transaction_123"
   }'
@@ -231,6 +260,119 @@ Hata durumunda:
 /.env.example
 ```
 
+## Mobil Uygulama Entegrasyonu (React Native/Expo)
+
+### 1. Kütüphane Kurulumu
+```bash
+npx expo install expo-in-app-purchases
+```
+
+### 2. Product ID Tanımlamaları
+```javascript
+// constants/products.js
+export const SUBSCRIPTION_PRODUCTS = {
+  ios: {
+    monthly: 'com.spondylus.kampdefterim.monthly',
+    yearly: 'com.spondylus.kampdefterim.yearly',
+  },
+  android: {
+    monthly: 'com.spondylus.boltexponativewind.monthly',
+    yearly: 'com.spondylus.boltexponativewind.yearly',
+  }
+};
+```
+
+### 3. Satın Alma Sonrası Backend'e Gönderme
+```javascript
+import * as InAppPurchases from 'expo-in-app-purchases';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Satın alma tamamlandığında
+async function handlePurchaseComplete(purchase) {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    const API_URL = 'https://botanikakademi.com'; // Production API URL
+    
+    const requestBody = Platform.OS === 'ios' 
+      ? {
+          platform: 'ios',
+          productId: purchase.productId,
+          transactionReceipt: purchase.transactionReceipt,
+          transactionId: purchase.transactionId,
+        }
+      : {
+          platform: 'android',
+          productId: purchase.productId,
+          purchaseToken: purchase.purchaseToken,
+          transactionId: purchase.orderId,
+        };
+    
+    const response = await fetch(`${API_URL}/node/subscriptions/verify`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('✅ Abonelik aktif edildi!', result.subscription);
+      // UI güncelle, premium özellikleri aç
+    } else {
+      console.error('❌ Doğrulama hatası:', result.error);
+    }
+    
+  } catch (error) {
+    console.error('Backend iletişim hatası:', error);
+  }
+}
+
+// Purchase listener kurulumu
+useEffect(() => {
+  const purchaseListener = InAppPurchases.setPurchaseListener(
+    ({ responseCode, results, errorCode }) => {
+      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
+        results?.forEach(purchase => {
+          if (!purchase.acknowledged) {
+            handlePurchaseComplete(purchase);
+            InAppPurchases.finishTransactionAsync(purchase, true);
+          }
+        });
+      }
+    }
+  );
+  
+  return () => {
+    purchaseListener?.remove();
+  };
+}, []);
+```
+
+### 4. Abonelik Durumu Kontrolü
+```javascript
+async function checkSubscriptionStatus() {
+  const token = await AsyncStorage.getItem('userToken');
+  
+  const response = await fetch('https://botanikakademi.com/node/subscriptions/status', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  
+  const { subscription } = await response.json();
+  
+  if (subscription.isActive) {
+    console.log('Premium kullanıcı:', subscription);
+    // offline_enabled: true
+    // offline_radius_km: 20 veya 50
+  }
+}
+```
+
 ## Destek
 
 Sorun yaşarsanız veya yardıma ihtiyacınız varsa:
@@ -241,4 +383,4 @@ Sorun yaşarsanız veya yardıma ihtiyacınız varsa:
 
 ---
 
-**Son Güncelleme:** 2026-02-10
+**Son Güncelleme:** 2026-02-13

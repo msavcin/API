@@ -1,5 +1,6 @@
 const db = require('../models');
 const User = db.User || require('../models/user');
+const SubscriptionPrice = db.SubscriptionPrice || require('../models/subscriptionPrice');
 const iap = require('in-app-purchase');
 
 // IAP configuration
@@ -309,5 +310,30 @@ exports.checkExpiredSubscriptions = async () => {
   } catch (error) {
     console.error('[Cron] Check expired subscriptions error:', error);
     throw error;
+  }
+};
+
+/**
+ * GET /node/subscriptions/prices
+ * Tüm platform ve plan kombinasyonlarının fiyatlarını döner
+ */
+exports.getPrices = async (req, res) => {
+  try {
+    const rows = await SubscriptionPrice.findAll({
+      attributes: ['platform', 'plan', 'price'],
+      order: [['platform', 'ASC'], ['plan', 'ASC']],
+    });
+
+    // { ios: { monthly: '₺49,99', yearly: '₺399,99' }, android: { ... } }
+    const prices = {};
+    for (const row of rows) {
+      if (!prices[row.platform]) prices[row.platform] = {};
+      prices[row.platform][row.plan] = row.price;
+    }
+
+    return res.json({ success: true, prices });
+  } catch (error) {
+    console.error('[Subscription] getPrices error:', error);
+    return res.status(500).json({ error: 'Fiyatlar alınamadı' });
   }
 };

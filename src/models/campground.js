@@ -26,6 +26,7 @@ const Campground = db.sequelize.define('Campground', {
   contact_email: { type: DataTypes.STRING },
   last_verified: { type: DataTypes.STRING },
   visibility: { type: DataTypes.STRING },
+  community_id: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
   owner_id: { type: DataTypes.INTEGER },
   friend_user_ids: { type: DataTypes.TEXT, defaultValue: '[]' },
   created_at: { type: DataTypes.STRING, defaultValue: DataTypes.NOW },
