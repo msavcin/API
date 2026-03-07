@@ -248,6 +248,113 @@ Hata durumunda:
 - Veritabanı migration'ının çalıştırıldığından emin olun
 - User modelinde subscription alanlarının olduğunu doğrulayın
 
+---
+
+## Server-to-Server Webhook Entegrasyonu
+
+Webhook'lar sayesinde abonelik iptal/iade/yenileme olayları **anlık** işlenir;
+`cron_subscription_checker.js` ise yalnızca yedek güvence olarak çalışmaya devam eder.
+
+### Yeni Ortam Değişkeni
+
+```env
+# Google Pub/Sub push doğrulama token'ı (isteğe bağlı ama önerilir)
+GOOGLE_PUBSUB_WEBHOOK_TOKEN=gizli_rastgele_dizi
+```
+
+### Yeni Migration
+
+```bash
+npx sequelize-cli db:migrate
+```
+
+Bu migration `users` tablosuna `subscription_lookup_key` sütununu ekler:
+- iOS: Her yenilemede sabit kalan Apple `originalTransactionId`
+- Android: Son aktif Google `purchaseToken`
+
+---
+
+### Apple App Store Server Notifications v2
+
+**Endpoint:** `POST /node/subscriptions/webhook/apple`  
+**Full URL:** `https://botanikakademi.com/node/subscriptions/webhook/apple`
+
+#### Kurulum (App Store Connect)
+1. [App Store Connect](https://appstoreconnect.apple.com) > Uygulamanız > **App Information**
+2. **App Store Server Notifications** bölümüne gidin
+3. **Production Server URL** alanına `https://botanikakademi.com/node/subscriptions/webhook/apple` yazın
+4. Sandbox URL'yi de aynı şekilde ekleyebilirsiniz
+
+#### İşlenen Olaylar
+
+| Olay | Aksiyon |
+|------|---------|
+| `SUBSCRIBED`, `DID_RENEW`, `OFFER_REDEEMED` | Kullanıcı aktif, süre güncellenir |
+| `EXPIRED`, `GRACE_PERIOD_EXPIRED` | Kullanıcı `guest` rolüne düşer |
+| `REFUND`, `REVOKE` | Kullanıcı anında deaktif edilir |
+| `DID_FAIL_TO_RENEW` | Grace period başladı, aksiyon alınmaz |
+
+---
+
+### Google Play Real-Time Developer Notifications
+
+**Endpoint:** `POST /node/subscriptions/webhook/google?token=<GOOGLE_PUBSUB_WEBHOOK_TOKEN>`  
+**Full URL:** `https://botanikakademi.com/node/subscriptions/webhook/google?token=gizli_rastgele_dizi`
+
+#### Kurulum (Google Cloud + Play Console)
+
+**1. Pub/Sub Topic oluşturun:**
+```bash
+gcloud pubsub topics create play-subs
+```
+
+**2. Play Console'a erişim izni verin:**
+```bash
+gcloud pubsub topics add-iam-policy-binding play-subs \
+  --member="serviceAccount:google-play-developer-notifications@system.gserviceaccount.com" \
+  --role="roles/pubsub.publisher"
+```
+
+**3. Push subscription oluşturun:**
+```bash
+gcloud pubsub subscriptions create play-subs-push \
+  --topic=play-subs \
+  --push-endpoint="https://botanikakademi.com/node/subscriptions/webhook/google?token=gizli_rastgele_dizi" \
+  --ack-deadline=30
+```
+
+**4. Play Console'da topic'i kaydedin:**
+Google Play Console > **Monetization** > **Monetization setup** bölümüne gidin ve Pub/Sub topic'ini girin.
+
+#### İşlenen Olaylar
+
+| Tip | Ad | Aksiyon |
+|-----|----|---------|
+| 1 | RECOVERED | Aktif — Google API'den senkronize |
+| 2 | RENEWED | Aktif — süre güncellendi |
+| 3 | CANCELED | **Aksiyon yok** — süre dolana kadar aktif, cron halleder |
+| 5 | ON_HOLD | Anında deaktif |
+| 6 | IN_GRACE_PERIOD | Aktif — Google API'den senkronize |
+| 7 | RESTARTED | Aktif — Google API'den senkronize |
+| 20 | EXPIRED | Anında deaktif |
+| 21 | REVOKED | Anında deaktif (iade vb.) |
+
+---
+
+### Frontend'in Yapması Gereken
+
+Webhook'lar tamamen sunucu-sunucu arası çalışır. **Frontend'de herhangi bir değişiklik gerekmez.**
+
+Bununla birlikte, uygulama ön plana geldiğinde veya abonelik ekranı açıldığında
+`GET /node/subscriptions/status` çağırmak hâlâ önerilir; bu sayede anlık durum
+kullanıcıya yansıtılır.
+
+```http
+GET /node/subscriptions/status
+Authorization: Bearer <JWT_TOKEN>
+```
+
+
 ## İlgili Dosyalar
 
 ```

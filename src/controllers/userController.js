@@ -182,6 +182,25 @@ exports.getMe = async (req, res) => {
     console.log('getMe: member yok');
   }
   console.log('getMe yanıtı avatar_url:', user.avatar_url);
+
+  // Gerçek zamanlı abonelik süre kontrolü — DB'yi de güncelle
+  const now = new Date();
+  const isExpired = user.subscription_is_active &&
+    user.subscription_expires_at &&
+    user.subscription_expires_at < now;
+  if (isExpired) {
+    await user.update({ subscription_is_active: false, offline_enabled: false, role: 'guest' });
+    user.subscription_is_active = false;
+    user.offline_enabled = false;
+    user.role = 'guest';
+    console.log('[getMe] Süresi geçmiş abonelik anında düşürüldü:', userId);
+  }
+
+  // isPremium: aktif abonelik VEYA superadmin tarafından manuel olarak verilen offline erişim
+  const isPremium = !!(user.offline_enabled || (user.subscription_is_active &&
+    user.subscription_expires_at &&
+    user.subscription_expires_at > now));
+
   res.json({
     id: user.id,
     name: user.name,
@@ -191,8 +210,17 @@ exports.getMe = async (req, res) => {
     role: user.role === 'superadmin' ? 'superadmin' : (member ? member.role : user.role),
     avatar_url: user.avatar_url || null,
     trial_user: user.trial_user,
-    offline_enabled: user.offline_enabled || false,
+    offline_enabled: isPremium,
     offline_radius_km: user.offline_radius_km || 20,
+    // Abonelik alanları — frontend bu iki alanı kullanarak premium durumu belirlemeli
+    isPremium,
+    subscription: {
+      isActive: isPremium,
+      expiresAt: user.subscription_expires_at || null,
+      autoRenewing: isPremium ? (user.subscription_auto_renewing ?? null) : false,
+      platform: user.subscription_platform || null,
+      productId: user.subscription_product_id || null,
+    },
     createdAt: user.createdAt,
     created_at: user.created_at,
     member: member ? {

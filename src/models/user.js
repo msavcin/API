@@ -18,6 +18,11 @@ const User = sequelize.define('User', {
   subscription_transaction_id: { type: DataTypes.STRING },
   subscription_expires_at: { type: DataTypes.DATE },
   subscription_is_active: { type: DataTypes.BOOLEAN, defaultValue: false },
+  // Webhook event'lerinde kullanıcı araması için:
+  // iOS = Apple originalTransactionId, Android = son geçerli purchaseToken
+  subscription_lookup_key: { type: DataTypes.STRING(512) },
+  // Kullanıcı iptal etmediyse true, iptal ettiyse false (süre bitinceye kadar isActive kalabilir)
+  subscription_auto_renewing: { type: DataTypes.BOOLEAN, defaultValue: null },
 }, {
   tableName: 'users',
   timestamps: true,
