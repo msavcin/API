@@ -306,3 +306,101 @@ exports.patchMe = async (req, res) => {
     res.status(500).json({ error: 'Profil güncellenemedi', detail: err.message });
   }
 };
+
+// Hesabı ve tüm ilgili verileri sil
+exports.deleteMe = async (req, res) => {
+  const db = require('../models');
+  const sequelize = db.sequelize;
+  const userId = req.user.id;
+
+  try {
+    await sequelize.transaction(async (t) => {
+      // 1. Arkadaşlık kayıtları (pending isteği dahil tüm statüler, her iki yön)
+      await sequelize.query(
+        'DELETE FROM friendships WHERE user_id = :userId OR friend_id = :userId',
+        { replacements: { userId }, transaction: t }
+      );
+
+      // 2. Topluluk üyelikleri
+      await sequelize.query(
+        'DELETE FROM community_members WHERE user_id = :userId',
+        { replacements: { userId }, transaction: t }
+      );
+
+      // 3. Kamp alanı fotoğrafları
+      await sequelize.query(
+        'DELETE FROM campground_images WHERE uploaded_by = :userId',
+        { replacements: { userId }, transaction: t }
+      );
+
+      // 4. Kullanıcıyı başkalarının kamp alanı arkadaş erişim listesinden çıkar
+      await sequelize.query(
+        'DELETE FROM campground_friend_access WHERE friend_user_id = :userId',
+        { replacements: { userId }, transaction: t }
+      );
+
+      // 5. Kullanıcının oluşturduğu etkinlik/duyurular (sistem duyuruları korunur)
+      await sequelize.query(
+        'DELETE FROM announcements WHERE created_by = :userId AND valilik_id IS NULL',
+        { replacements: { userId }, transaction: t }
+      );
+
+      // 6. Checklist paylaşımları (paylaşan veya paylaşılan olarak)
+      await sequelize.query(
+        'DELETE FROM checklist_shares WHERE shared_by_user_id = :userId OR shared_with_user_id = :userId',
+        { replacements: { userId }, transaction: t }
+      );
+
+      // 7. Kullanıcının özel kontrol listesi öğeleri
+      await sequelize.query(
+        'DELETE FROM custom_checklist_items WHERE checklist_id IN (SELECT id FROM custom_checklists WHERE user_id = :userId)',
+        { replacements: { userId }, transaction: t }
+      );
+
+      // 8. Kullanıcının özel kontrol listeleri
+      await sequelize.query(
+        'DELETE FROM custom_checklists WHERE user_id = :userId',
+        { replacements: { userId }, transaction: t }
+      );
+
+      // 9. Kullanıcının oluşturduğu kamp alanları (source_id='0' → kullanıcı girişi)
+      await sequelize.query(
+        "DELETE FROM campgrounds WHERE owner_id = :userId AND source_id = '0'",
+        { replacements: { userId }, transaction: t }
+      );
+
+      // 10. Diğer kamp alanlarının friend_user_ids JSON dizisinden kullanıcıyı çıkar
+      //     (INT veya STRING olarak saklanan her iki biçimi de kapsar)
+      await sequelize.query(
+        `UPDATE campgrounds
+         SET friend_user_ids = (
+           SELECT COALESCE(json_agg(e)::text, '[]')
+           FROM jsonb_array_elements(COALESCE(NULLIF(friend_user_ids, ''), '[]')::jsonb) e
+           WHERE e::text NOT IN (:userIdNum, :userIdQuoted)
+         )
+         WHERE friend_user_ids IS NOT NULL
+           AND friend_user_ids NOT IN ('', '[]')
+           AND friend_user_ids LIKE :likePattern`,
+        {
+          replacements: {
+            userIdNum: String(userId),
+            userIdQuoted: `"${userId}"`,
+            likePattern: `%${userId}%`,
+          },
+          transaction: t,
+        }
+      );
+
+      // 11. Kullanıcıyı sil (en son)
+      await sequelize.query(
+        'DELETE FROM users WHERE id = :userId',
+        { replacements: { userId }, transaction: t }
+      );
+    });
+
+    res.json({ message: 'Hesabınız başarıyla silindi.' });
+  } catch (err) {
+    console.error('[deleteMe] Hata:', err);
+    res.status(500).json({ error: 'Hesap silinemedi', detail: err.message });
+  }
+};

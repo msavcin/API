@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getMe, updateMe, updateEmail, refreshToken, createUser, listUsers, getAvatarUploadUrl, patchMe } = require('../controllers/userController');
+const { register, login, getMe, updateMe, updateEmail, refreshToken, createUser, listUsers, getAvatarUploadUrl, patchMe, deleteMe } = require('../controllers/userController');
 const emailVerificationController = require('../controllers/emailVerificationController');
 const passwordResetController = require('../controllers/passwordResetController');
 // E-posta doğrulama kodu gönder
@@ -22,6 +22,8 @@ router.put('/me', authMiddleware, updateMe);
 router.post('/avatar/upload-url', authMiddleware, getAvatarUploadUrl);
 // Kendi profilini PATCH ile güncelle
 router.patch('/me', authMiddleware, patchMe);
+// Kendi hesabını sil (tüm ilgili verilerle birlikte)
+router.delete('/me', authMiddleware, deleteMe);
 // Refresh token endpointi (güncel rol ile yeni JWT)
 router.post('/refresh-token', authMiddleware, refreshToken);
 
