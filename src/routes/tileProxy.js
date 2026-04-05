@@ -38,6 +38,14 @@ const TILE_PROVIDERS = [
   'https://d.basemaps.cartocdn.com/rastertiles/voyager',
 ];
 
+// CARTO dark tile providers
+const DARK_TILE_PROVIDERS = [
+  'https://a.basemaps.cartocdn.com/dark_all',
+  'https://b.basemaps.cartocdn.com/dark_all',
+  'https://c.basemaps.cartocdn.com/dark_all',
+  'https://d.basemaps.cartocdn.com/dark_all',
+];
+
 // Helper: Token'dan kullanıcı bilgisi al
 async function getUserFromToken(token) {
   if (!token) return null;
@@ -57,7 +65,8 @@ async function getUserFromToken(token) {
 router.get('/:z/:x/:y.png', async (req, res) => {
   try {
     const { z, x, y } = req.params;
-    const cacheKey = `tile:${z}:${x}:${y}`;
+    const style = req.query.style === 'dark' ? 'dark' : 'voyager';
+    const cacheKey = `tile:${style}:${z}:${x}:${y}`;
 
     // CORS headers (mobil app için gerekli)
     res.set({
@@ -104,10 +113,11 @@ router.get('/:z/:x/:y.png', async (req, res) => {
     }
 
     // Subdomain seçimi (basit load balancing)
-    const providerIndex = (parseInt(x) + parseInt(y)) % TILE_PROVIDERS.length;
-    const tileUrl = `${TILE_PROVIDERS[providerIndex]}/${z}/${x}/${y}.png`;
+    const providers = style === 'dark' ? DARK_TILE_PROVIDERS : TILE_PROVIDERS;
+    const providerIndex = (parseInt(x) + parseInt(y)) % providers.length;
+    const tileUrl = `${providers[providerIndex]}/${z}/${x}/${y}.png`;
 
-    console.log(`[TILE] REDIS MISS: ${z}/${x}/${y} -> Fetching from CartoDB`);
+    console.log(`[TILE] REDIS MISS: ${z}/${x}/${y} (style: ${style}) -> Fetching from CartoDB`);
 
     // CartoDB'den tile çek
     const response = await axios.get(tileUrl, {

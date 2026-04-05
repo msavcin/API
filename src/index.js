@@ -44,6 +44,8 @@ app.use('/node/campground_friend_access', bodyParser.json(), require('./routes/c
 app.use('/node/subscriptions', bodyParser.json(), require('./routes/subscriptions'));
 // License/public key endpoint
 app.use('/node/licenses', bodyParser.json(), require('./routes/licenses'));
+// Kamp planlayıcı AI değerlendirmesi
+app.use('/node/planner', bodyParser.json(), require('./routes/planner'));
 
 // Sunucuyu başlat
 const PORT = process.env.PORT || 3000;
