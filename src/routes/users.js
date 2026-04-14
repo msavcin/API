@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getMe, updateMe, updateEmail, refreshToken, createUser, listUsers, getAvatarUploadUrl, patchMe, deleteMe } = require('../controllers/userController');
+const { register, login, getMe, updateMe, updateEmail, refreshToken, createUser, listUsers, getAvatarUploadUrl, patchMe, deleteMe, aiEvalStatus } = require('../controllers/userController');
 const emailVerificationController = require('../controllers/emailVerificationController');
 const passwordResetController = require('../controllers/passwordResetController');
 // E-posta doğrulama kodu gönder
@@ -16,6 +16,8 @@ const { authMiddleware } = require('../middleware/auth');
 router.post('/register', register);
 router.post('/login', login);
 router.get('/me', authMiddleware, getMe);
+// Kullanıcının o gün için kalan AI değerlendirme hakkı (tüketmeden sorgulama)
+router.get('/me/ai-eval-status', authMiddleware, aiEvalStatus);
 router.put('/update-email', authMiddleware, updateEmail);
 router.put('/me', authMiddleware, updateMe);
 // Avatar upload için presigned URL

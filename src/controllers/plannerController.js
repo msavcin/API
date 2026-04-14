@@ -120,7 +120,7 @@ async function getNearbyAlternatives(lat, lng, campType, excludeId, limit = 5) {
     let rows = await Campground.findAll({
       where,
       limit: limit * 6,
-      attributes: ['id', 'name', 'type', 'latitude', 'longitude', 'rating'],
+      attributes: ['id', 'name', 'type', 'latitude', 'longitude', 'rating', 'province'],
     });
 
     // Haversine ile gerçek mesafeyi hesapla
@@ -162,7 +162,7 @@ async function getCampgroundByExternalId(externalId) {
         deleted: 0,
       },
       attributes: [
-        'id', 'name', 'latitude', 'longitude', 'type', 'description',
+        'id', 'name', 'latitude', 'longitude', 'type', 'description', 'province',
         'facilities', 'amenities', 'rating', 'review_count', 'fee',
         'price_range', 'booking_url', 'capacity',
       ],
@@ -395,6 +395,64 @@ exports.aiEvaluate = async (req, res) => {
     const mode = planData.mode === 'preview' ? 'preview' : 'final';
     const { startDate, endDate, campType, campingArea, userLocation, weather, valilikId, routeInfo: clientRouteInfo, announcements: frontendAnnouncements, nearbyAreas: frontendNearbyAreas } = planData;
 
+    // --- Günlük kullanım limiti kontrolü (kullanıcı başına) ---
+    // Limit: process.env.AI_DAILY_EVAL_LIMIT veya app_settings tablosundaki 'ai_daily_eval_limit' anahtarı
+    let evalLimit = parseInt(process.env.AI_DAILY_EVAL_LIMIT ?? '10', 10);
+    let evalRemaining = null;
+    try {
+      const User = db.User || require('../models/user');
+      const AppSetting = db.AppSetting || require('../models/appSetting');
+
+      // DB üzerinden override varsa oku (opsiyonel tablo)
+      try {
+        const s = await AppSetting.findByPk('ai_daily_eval_limit');
+        if (s && s.value) {
+          const p = parseInt(s.value, 20); // Günlük limit. Deneme süresi bittiğinde düşürülebilir.
+          if (!Number.isNaN(p)) evalLimit = p;
+        }
+      } catch (e) {
+        // app_settings yoksa devam et (opsiyonel)
+      }
+
+      // Eğer auth bilgisi yoksa limit uygulama
+      if (req.user && req.user.id) {
+        const today = new Date().toISOString().slice(0, 10);
+
+        // Atomik artış: tarih bugününse sayaç++ yoksa 1 olacak.
+        const [updated] = await User.update(
+          {
+            ai_eval_count_date: today,
+            ai_eval_count: db.sequelize.literal(`CASE WHEN ai_eval_count_date = '${today}' THEN ai_eval_count + 1 ELSE 1 END`),
+          },
+          {
+            where: {
+              id: req.user.id,
+              [Op.or]: [
+                { ai_eval_count_date: { [Op.ne]: today } },
+                { ai_eval_count: { [Op.lt]: evalLimit } },
+              ],
+            },
+          }
+        );
+
+        if (!updated) {
+          // Limit aşıldı — mevcut kullanım bilgisini al ve 429 dön
+          const u = await User.findByPk(req.user.id, { attributes: ['ai_eval_count', 'ai_eval_count_date'] });
+          const used = (u && u.ai_eval_count_date && String(u.ai_eval_count_date).slice(0, 10) === today) ? (u.ai_eval_count || 0) : 0;
+          evalRemaining = Math.max(0, evalLimit - used);
+          return res.status(429).json({ error: 'Günlük değerlendirme limiti aşıldı', remaining: evalRemaining, limit: evalLimit });
+        }
+
+        // Güncel kullanım bilgisini al
+        const u2 = await User.findByPk(req.user.id, { attributes: ['ai_eval_count', 'ai_eval_count_date'] });
+        const used2 = (u2 && u2.ai_eval_count) ? u2.ai_eval_count : 0;
+        evalRemaining = Math.max(0, evalLimit - used2);
+      }
+    } catch (e) {
+      console.warn('[PLANNER] ai-eval usage check failed:', e && e.message ? e.message : e);
+      // Limit kontrolü hata verirse servisi engelleme — değerlendirme devam eder
+    }
+
     const campLat = campingArea?.lat ?? campingArea?.latitude;
     const campLng = campingArea?.lng ?? campingArea?.longitude;
 
@@ -503,7 +561,10 @@ exports.aiEvaluate = async (req, res) => {
     const cacheKey = `ai-eval:${mode}:${computeHash(ctx)}`;
     const cached = await cache.get(cacheKey);
     if (cached) {
-      return res.json({ ...JSON.parse(cached), cached: true });
+      const cachedObj = JSON.parse(cached);
+      if (typeof evalRemaining === 'number') cachedObj.remaining = evalRemaining;
+      if (typeof evalLimit === 'number') cachedObj.limit = evalLimit;
+      return res.json({ ...cachedObj, cached: true });
     }
 
     // 3. Prompt oluştur ve LLM'e gönder
@@ -573,7 +634,12 @@ exports.aiEvaluate = async (req, res) => {
       fallback,
     };
 
-    await cache.set(cacheKey, JSON.stringify(result), CACHE_TTL);
+    // Cache'a user-a özel alanlar eklemeyin (remaining kullanıcıya özeldir)
+    const cachePayload = { ...result };
+    await cache.set(cacheKey, JSON.stringify(cachePayload), CACHE_TTL);
+
+    if (typeof evalRemaining === 'number') result.remaining = evalRemaining;
+    if (typeof evalLimit === 'number') result.limit = evalLimit;
 
     return res.json(result);
   } catch (err) {

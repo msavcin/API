@@ -101,6 +101,9 @@ Mobile tarafta (Expo / React Native) bu endpoint'e istek atarak kullanıcıya
 | `cached` | `boolean` | `true` ise aynı plan için önceden üretilmiş sonuç döndürüldü |
 | `fallback` | `boolean` | `true` ise LLM yanıt veremedi, kural tabanlı sonuç döndürüldü |
 
+| `remaining` | `number` | Kullanıcının o gün için kalan değerlendirme hakkı |
+| `limit` | `number` | Günlük maksimum değerlendirme hakkı (sunucu tarafı ayarı) |
+
 ---
 
 ## 5. Hata Yanıtları
@@ -155,6 +158,10 @@ export interface AiEvaluateResult {
   modules: string[];
   cached: boolean;
   fallback: boolean;
+  // Kullanıcının o gün için kalan değerlendirme hakkı (opsiyonel)
+  remaining?: number;
+  // Günlük limit (sunucu tarafı ayarı, opsiyonel)
+  limit?: number;
 }
 
 export async function fetchAiEvaluation(

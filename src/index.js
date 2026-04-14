@@ -4,6 +4,8 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const db = require('./models');
+const http = require('http');
+const chatSocket = require('./utils/chatSocket');
 
 
 const app = express();
@@ -46,11 +48,21 @@ app.use('/node/subscriptions', bodyParser.json(), require('./routes/subscription
 app.use('/node/licenses', bodyParser.json(), require('./routes/licenses'));
 // Kamp planlayıcı AI değerlendirmesi
 app.use('/node/planner', bodyParser.json(), require('./routes/planner'));
+// Chat routes
+app.use('/node/chat', bodyParser.json(), require('./routes/chat'));
 
 // Sunucuyu başlat
 const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
 db.sequelize.sync().then(() => {
-  app.listen(PORT, '0.0.0.0',() => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`API sunucusu ${PORT} portunda çalışıyor.`);
   });
+  // WebSocket init
+  try {
+    chatSocket.init(server);
+    console.log('[WS] Chat WebSocket başlatıldı.');
+  } catch (e) {
+    console.warn('[WS] Başlatılamadı:', e && e.message);
+  }
 });

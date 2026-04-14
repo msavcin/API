@@ -148,92 +148,120 @@ if (!CommunityMember.associations || !CommunityMember.associations.user) {
   CommunityMember.belongsTo(UserModel, { foreignKey: 'user_id', as: 'user' });
 }
 exports.getMe = async (req, res) => {
-  const userId = req.user.id;
-  const user = await User.findByPk(userId);
-  if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+  try {
+    const userId = req.user.id;
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
     console.log('Kullanıcı avatar_url:', user.avatar_url);
-  // Kullanıcının topluluk üyeliğini bul
-  // status enum: 'active' (onaylı), 'pending' (beklemede), 'rejected' (reddedildi), 'removed' (çıkarıldı)
-  // Önce pending üyelik var mı kontrol et
-  const pendingMember = await CommunityMember.findOne({
-    where: { user_id: userId, status: 'pending' },
-    include: [{ model: UserModel, as: 'user', attributes: ['id', 'name', 'username', 'email'] }]
-  });
-  if (pendingMember) {
-    console.log('getMe: member status:', pendingMember.status || pendingMember.member_status);
-    return res.status(403).json({ error: 'Topluluk üyeliğiniz henüz onaylanmadı (pending).' });
-  }
-  // Aktif üyelik varsa devam et
-  const member = await CommunityMember.findOne({
-    where: { user_id: userId, status: 'active' },
-    include: [{ model: UserModel, as: 'user', attributes: ['id', 'name', 'username', 'email'] }]
-  });
-  if (member) {
-    console.log('getMe: member status:', member.status || member.member_status);
-    if (member.user) {
-      console.log('getMe: member.user:', member.user);
-      console.log('getMe: member.user.name:', member.user.name);
-      console.log('getMe: member.user.username:', member.user.username);
-      console.log('getMe: member.user.email:', member.user.email);
-    } else {
-      console.log('getMe: member.user yok');
+
+    // Kullanıcının topluluk üyeliğini bul
+    const pendingMember = await CommunityMember.findOne({
+      where: { user_id: userId, status: 'pending' },
+      include: [{ model: UserModel, as: 'user', attributes: ['id', 'name', 'username', 'email'] }]
+    });
+    if (pendingMember) {
+      console.log('getMe: member status:', pendingMember.status || pendingMember.member_status);
+      return res.status(403).json({ error: 'Topluluk üyeliğiniz henüz onaylanmadı (pending).' });
     }
-  } else {
-    console.log('getMe: member yok');
+
+    const member = await CommunityMember.findOne({
+      where: { user_id: userId, status: 'active' },
+      include: [{ model: UserModel, as: 'user', attributes: ['id', 'name', 'username', 'email'] }]
+    });
+    if (member) {
+      console.log('getMe: member status:', member.status || member.member_status);
+    } else {
+      console.log('getMe: member yok');
+    }
+    console.log('getMe yanıtı avatar_url:', user.avatar_url);
+
+    // Gerçek zamanlı abonelik süre kontrolü — DB'yi de güncelle
+    const now = new Date();
+    const isExpired = user.subscription_is_active &&
+      user.subscription_expires_at &&
+      user.subscription_expires_at < now;
+    if (isExpired) {
+      await user.update({ subscription_is_active: false, offline_enabled: false, role: 'guest' });
+      user.subscription_is_active = false;
+      user.offline_enabled = false;
+      user.role = 'guest';
+      console.log('[getMe] Süresi geçmiş abonelik anında düşürüldü:', userId);
+    }
+
+    const isPremium = !!(user.offline_enabled || (user.subscription_is_active &&
+      user.subscription_expires_at &&
+      user.subscription_expires_at > now));
+
+    return res.json({
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      community_id: member ? member.community_id : null,
+      role: user.role === 'superadmin' ? 'superadmin' : (member ? member.role : user.role),
+      avatar_url: user.avatar_url || null,
+      trial_user: user.trial_user,
+      offline_enabled: isPremium,
+      offline_radius_km: user.offline_radius_km || 20,
+      isPremium,
+      subscription: {
+        isActive: isPremium,
+        expiresAt: user.subscription_expires_at || null,
+        autoRenewing: isPremium ? (user.subscription_auto_renewing ?? null) : false,
+        platform: user.subscription_platform || null,
+        productId: user.subscription_product_id || null,
+      },
+      createdAt: user.createdAt,
+      created_at: user.created_at,
+      member: member ? {
+        ...member.toJSON(),
+        user: member.user ? {
+          id: member.user.id,
+          name: member.user.name,
+          username: member.user.username,
+          email: member.user.email,
+          role: req.user.role
+        } : undefined
+      } : null
+    });
+  } catch (err) {
+    console.error('[getMe] Hata:', err);
+    if (err && err.name === 'SequelizeDatabaseError' && err.parent && err.parent.code === '42703') {
+      return res.status(500).json({ error: 'Veritabanı sütunu eksik. Lütfen migrationları çalıştırın: npx sequelize-cli db:migrate' });
+    }
+    return res.status(500).json({ error: 'Kullanıcı bilgisi alınamadı', detail: err.message });
   }
-  console.log('getMe yanıtı avatar_url:', user.avatar_url);
+};
 
-  // Gerçek zamanlı abonelik süre kontrolü — DB'yi de güncelle
-  const now = new Date();
-  const isExpired = user.subscription_is_active &&
-    user.subscription_expires_at &&
-    user.subscription_expires_at < now;
-  if (isExpired) {
-    await user.update({ subscription_is_active: false, offline_enabled: false, role: 'guest' });
-    user.subscription_is_active = false;
-    user.offline_enabled = false;
-    user.role = 'guest';
-    console.log('[getMe] Süresi geçmiş abonelik anında düşürüldü:', userId);
+// Kullanıcının o gün için kalan AI değerlendirme hakkını döner (tüketmez)
+exports.aiEvalStatus = async (req, res) => {
+  try {
+    const evalLimitDefault = parseInt(process.env.AI_DAILY_EVAL_LIMIT ?? '10', 10);
+    let evalLimit = evalLimitDefault;
+    const AppSetting = db.AppSetting || require('../models/appSetting');
+    try {
+      const s = await AppSetting.findByPk('ai_daily_eval_limit');
+      if (s && s.value) {
+        const p = parseInt(s.value, 10);
+        if (!Number.isNaN(p)) evalLimit = p;
+      }
+    } catch (e) {
+      // app_settings tablosu yoksa veya sorgu hata verirse varsayılanı kullan
+    }
+
+    const userId = req.user.id;
+    const user = await User.findByPk(userId, { attributes: ['ai_eval_count', 'ai_eval_count_date'] });
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const used = (user.ai_eval_count_date && String(user.ai_eval_count_date).slice(0, 10) === today) ? (user.ai_eval_count || 0) : 0;
+    const remaining = Math.max(0, evalLimit - used);
+
+    return res.json({ remaining, limit: evalLimit, used });
+  } catch (err) {
+    console.error('[USER] aiEvalStatus error:', err && err.message ? err.message : err);
+    return res.status(500).json({ error: 'Durum alınamadı' });
   }
-
-  // isPremium: aktif abonelik VEYA superadmin tarafından manuel olarak verilen offline erişim
-  const isPremium = !!(user.offline_enabled || (user.subscription_is_active &&
-    user.subscription_expires_at &&
-    user.subscription_expires_at > now));
-
-  res.json({
-    id: user.id,
-    name: user.name,
-    username: user.username,
-    email: user.email,
-    community_id: member ? member.community_id : null,
-    role: user.role === 'superadmin' ? 'superadmin' : (member ? member.role : user.role),
-    avatar_url: user.avatar_url || null,
-    trial_user: user.trial_user,
-    offline_enabled: isPremium,
-    offline_radius_km: user.offline_radius_km || 20,
-    // Abonelik alanları — frontend bu iki alanı kullanarak premium durumu belirlemeli
-    isPremium,
-    subscription: {
-      isActive: isPremium,
-      expiresAt: user.subscription_expires_at || null,
-      autoRenewing: isPremium ? (user.subscription_auto_renewing ?? null) : false,
-      platform: user.subscription_platform || null,
-      productId: user.subscription_product_id || null,
-    },
-    createdAt: user.createdAt,
-    created_at: user.created_at,
-    member: member ? {
-      ...member.toJSON(),
-      user: member.user ? {
-        id: member.user.id,
-        name: member.user.name,
-        username: member.user.username,
-        email: member.user.email,
-        role: req.user.role // JWT'den gelen role
-      } : undefined
-    } : null
-  });
 };
 
 
@@ -257,25 +285,14 @@ exports.updateEmail = async (req, res) => {
 };
 // Avatar upload için presigned URL dönen endpoint
 exports.getAvatarUploadUrl = async (req, res) => {
-  const AWS = require('aws-sdk');
-  const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION
-  });
-  const userId = req.user.id;
-  // İstekten dosya adı ve contentType al
-  let { fileName, contentType } = req.body;
-  if (!fileName) fileName = `avatars/${userId}_${Date.now()}.jpg`;
-  if (!contentType) contentType = 'image/jpeg';
-  const params = {
-    Bucket: process.env.AWS_S3_BUCKET,
-    Key: fileName,
-    Expires: 60,
-    ContentType: contentType,
-  };
   try {
-    const uploadUrl = await s3.getSignedUrlPromise('putObject', params);
+    const { getPutObjectSignedUrl } = require('../utils/s3');
+    const userId = req.user.id;
+    // İstekten dosya adı ve contentType al
+    let { fileName, contentType } = req.body;
+    if (!fileName) fileName = `avatars/${userId}_${Date.now()}.jpg`;
+    if (!contentType) contentType = 'image/jpeg';
+    const uploadUrl = await getPutObjectSignedUrl({ Bucket: process.env.AWS_S3_BUCKET, Key: fileName, ContentType: contentType, expiresIn: 60 });
     res.json({ uploadUrl, fileName });
   } catch (err) {
     console.error('S3 presigned URL hatası:', err);

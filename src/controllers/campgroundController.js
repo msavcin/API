@@ -1,6 +1,7 @@
 const db = require('../models');
 const Campground = db.Campground || require('../models/campground');
 const { Op } = require('sequelize');
+const enrichmentService = require('../services/campgroundEnrichmentService');
 
 // 1. Kamp Alanı Ekle
 exports.createCampground = async (req, res) => {
@@ -13,7 +14,7 @@ exports.createCampground = async (req, res) => {
 
     let {
       name, latitude, longitude, type, description, website, phone, opening_hours, capacity, fee, status, rating, review_count, price_range,
-      facilities, accessibility, social_media, amenities, images, tags, booking_url, contact_email, last_verified, visibility, owner_id, community_id,
+      facilities, accessibility, social_media, amenities, images, tags, province, booking_url, contact_email, last_verified, visibility, owner_id, community_id,
       friend_user_ids,
       created_at, updated_at, external_id, source_id = 0, photo_links
     } = req.body;
@@ -152,6 +153,14 @@ exports.createCampground = async (req, res) => {
     } else if (typeof tags !== 'string') {
       tags = JSON.stringify(tags);
     }
+    // province: accept object or JSON string; keep null if invalid
+    if (province !== undefined && province !== null) {
+      if (typeof province === 'string') {
+        try { province = JSON.parse(province); } catch (e) { province = null; }
+      }
+    } else {
+      province = null;
+    }
   if (facilities && typeof facilities !== 'string') facilities = JSON.stringify(facilities);
   if (accessibility && typeof accessibility !== 'string') accessibility = JSON.stringify(accessibility);
   if (social_media && typeof social_media !== 'string') social_media = JSON.stringify(social_media);
@@ -178,7 +187,7 @@ exports.createCampground = async (req, res) => {
     }
     console.log('[CREATE][DB] amenities veritabanına yazılacak değer:', amenities);
     const campground = await Campground.create({
-      name, latitude, longitude, type, description, website, phone, opening_hours, capacity, fee, status, rating, review_count, price_range, facilities, accessibility, social_media, amenities, images, tags, booking_url, contact_email, last_verified, visibility, community_id, owner_id, friend_user_ids: friend_user_ids && JSON.stringify(friend_user_ids), created_at, updated_at, external_id, source_id, photo_links
+      name, latitude, longitude, type, description, website, phone, opening_hours, capacity, fee, status, rating, review_count, price_range, facilities, accessibility, social_media, amenities, images, tags, province, booking_url, contact_email, last_verified, visibility, community_id, owner_id, friend_user_ids: friend_user_ids && JSON.stringify(friend_user_ids), created_at, updated_at, external_id, source_id, photo_links
     });
 
     // Eğer friend_user_ids varsa, erişim tablosuna ekle
@@ -188,6 +197,7 @@ exports.createCampground = async (req, res) => {
       await CampgroundFriendAccess.bulkCreate(accessRecords);
     }
   console.log('[CREATE][RESPONSE] amenities:', campground.amenities);
+  console.log('[CREATE][RESPONSE] province:', campground.province);
   res.status(201).json(campground.toJSON());
   } catch (err) {
     res.status(500).json({ error: 'Kamp alanı eklenemedi', detail: err.message });
@@ -305,7 +315,45 @@ exports.getCampground = async (req, res) => {
   }
 };
 
-// 4. Kamp Alanı Sil
+// 4. Kamp Alanı Zenginleştir
+exports.enrichCampground = async (req, res) => {
+  try {
+    const idOrExternal = req.params.id;
+    let campground = await Campground.findOne({ where: { external_id: idOrExternal } });
+    if (!campground) {
+      const id = parseInt(idOrExternal, 10);
+      if (!isNaN(id)) {
+        campground = await Campground.findByPk(id);
+      }
+    }
+    if (!campground) return res.status(404).json({ error: 'Kamp alanı bulunamadı' });
+
+    const sources = Array.isArray(req.body.sources)
+      ? req.body.sources
+      : req.body.sources
+        ? [req.body.sources]
+        : ['google', 'website', 'tourism_portals'];
+
+    const enrichmentData = await enrichmentService.enrichCampgroundData(campground.toJSON(), { sources });
+    if (!enrichmentData) {
+      return res.status(200).json({ message: 'Zenginleştirme için ek veri bulunamadı' });
+    }
+
+    if (enrichmentData.social_media && typeof enrichmentData.social_media !== 'string') {
+      enrichmentData.social_media = JSON.stringify(enrichmentData.social_media);
+    }
+
+    await Campground.update(enrichmentData, { where: { id: campground.id } });
+    const updatedCampground = await Campground.findByPk(campground.id);
+
+    res.json({ message: 'Kamp alanı zenginleştirildi', enrichment: enrichmentData, campground: updatedCampground });
+  } catch (err) {
+    console.error('[ENRICH][ERROR]', err);
+    res.status(500).json({ error: 'Kamp alanı zenginleştirilemedi', detail: err.message });
+  }
+};
+
+// 5. Kamp Alanı Sil
 exports.deleteCampground = async (req, res) => {
   // owner_id artık JWT'den alınacak
   const owner_id = req.user && req.user.id;
@@ -408,7 +456,7 @@ exports.updateCampground = async (req, res) => {
       'name', 'latitude', 'longitude', 'type', 'description', 'website', 'phone', 'opening_hours', 'capacity', 'fee',
       'status', 'rating', 'review_count', 'price_range', 'facilities', 'accessibility', 'social_media', 'amenities',
       'images', 'tags', 'booking_url', 'contact_email', 'last_verified', 'visibility', 'external_id', 'source_id', 'photo_links',
-      'friend_user_ids'
+      'province', 'friend_user_ids'
     ];
 
     // amenities, images, tags, facilities, accessibility, social_media için uygun tip dönüşümleri
@@ -442,6 +490,18 @@ exports.updateCampground = async (req, res) => {
             value = JSON.stringify(value);
           }
         }
+        if (field === 'province') {
+          if (value === null) {
+            campground[field] = null;
+            return;
+          }
+          if (typeof value === 'string') {
+            try { value = JSON.parse(value); } catch (e) { value = null; }
+          }
+          campground[field] = value;
+          return;
+        }
+
         if (field === 'friend_user_ids') {
           if (Array.isArray(value)) {
             // ensure JSON string format

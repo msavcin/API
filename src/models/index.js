@@ -38,6 +38,7 @@ const Campground = sequelize.define('Campground', {
   amenities: { type: DataTypes.TEXT, defaultValue: '[]' },
   tags: { type: DataTypes.TEXT, defaultValue: '{}' },
   images: { type: DataTypes.TEXT, defaultValue: '[]' },
+  province: { type: DataTypes.JSONB, allowNull: true },
   deleted: { type: DataTypes.INTEGER, defaultValue: 0 },
 }, {
   tableName: 'campgrounds',
@@ -65,6 +66,10 @@ ChecklstShare.belongsTo(CustomChecklist, { foreignKey: 'checklist_id', as: 'cust
 CustomChecklist.belongsTo(User, { foreignKey: 'user_id', as: 'owner' });
 
 const CampgroundFriendAccess = require('./campgroundFriendAccess');
+const Rating = require('./rating');
+const ChatConversation = require('./chatConversation');
+const ChatMessage = require('./chatMessage');
+const ChatConversationParticipant = require('./chatConversationParticipant');
 
 module.exports = {
   sequelize,
@@ -76,4 +81,31 @@ module.exports = {
   CustomChecklist,
   PasswordReset,
   CampgroundFriendAccess,
+  Rating,
+  ChatConversation,
+  ChatMessage,
+  ChatConversationParticipant,
 };
+
+// Associations for ratings
+try {
+  Rating.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  Rating.belongsTo(Campground, { foreignKey: 'campground_id', as: 'campground' });
+  Campground.hasMany(Rating, { foreignKey: 'campground_id', as: 'ratings' });
+  User.hasMany(Rating, { foreignKey: 'user_id', as: 'ratings' });
+} catch (e) {
+  // Safe-guard for migration / boot ordering
+  console.warn('[MODELS] rating association setup failed', e.message);
+}
+
+// Chat associations
+try {
+  ChatMessage.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
+  ChatMessage.belongsTo(ChatConversation, { foreignKey: 'conversation_id', as: 'conversation' });
+  ChatConversation.hasMany(ChatMessage, { foreignKey: 'conversation_id', as: 'messages' });
+  ChatConversationParticipant.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  ChatConversation.hasMany(ChatConversationParticipant, { foreignKey: 'conversation_id', as: 'participants' });
+  ChatConversationParticipant.belongsTo(ChatConversation, { foreignKey: 'conversation_id', as: 'conversation' });
+} catch (e) {
+  console.warn('[MODELS] chat association setup failed', e.message);
+}

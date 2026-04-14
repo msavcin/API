@@ -37,6 +37,7 @@ const Campground = db.sequelize.define('Campground', {
   amenities: { type: DataTypes.TEXT, defaultValue: '[]' },
   tags: { type: DataTypes.TEXT, defaultValue: '{}' },
   images: { type: DataTypes.TEXT, defaultValue: '[]' },
+  province: { type: DataTypes.JSONB, allowNull: true },
   deleted: { type: DataTypes.INTEGER, defaultValue: 0 },
 }, {
   tableName: 'campgrounds',

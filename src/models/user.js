@@ -23,6 +23,9 @@ const User = sequelize.define('User', {
   subscription_lookup_key: { type: DataTypes.STRING(512) },
   // Kullanıcı iptal etmediyse true, iptal ettiyse false (süre bitinceye kadar isActive kalabilir)
   subscription_auto_renewing: { type: DataTypes.BOOLEAN, defaultValue: null },
+  // AI değerlendirme günlük kullanım sayacı
+  ai_eval_count: { type: DataTypes.INTEGER, defaultValue: 0 },
+  ai_eval_count_date: { type: DataTypes.DATEONLY, allowNull: true },
 }, {
   tableName: 'users',
   timestamps: true,
