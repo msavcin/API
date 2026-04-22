@@ -26,8 +26,8 @@ router.post('/avatar/upload-url', authMiddleware, getAvatarUploadUrl);
 router.patch('/me', authMiddleware, patchMe);
 // Kendi hesabını sil (tüm ilgili verilerle birlikte)
 router.delete('/me', authMiddleware, deleteMe);
-// Refresh token endpointi (güncel rol ile yeni JWT)
-router.post('/refresh-token', authMiddleware, refreshToken);
+// Refresh token endpointi (güncel rol ile yeni JWT veya body içinden refreshToken ile)
+router.post('/refresh-token', refreshToken);
 
 module.exports = router;
 // Şifre sıfırlama isteği

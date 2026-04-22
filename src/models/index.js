@@ -52,6 +52,7 @@ const Campground = sequelize.define('Campground', {
 
 const CommunityMember = require('./communityMember');
 const PasswordReset = require('./passwordReset');
+const RefreshToken = require('./refreshToken');
 const User = require('./user');
 const Friendship = require('./friendship');
 const ChecklstShare = require('./checklstShare');
@@ -76,6 +77,7 @@ module.exports = {
   Campground,
   CommunityMember,
   User,
+  RefreshToken,
   Friendship,
   ChecklstShare,
   CustomChecklist,

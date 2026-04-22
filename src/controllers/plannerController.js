@@ -37,8 +37,9 @@ const {
   AnnouncementModule,
   AlternativeLocationModule,
   RouteConditionModule,
-  BookingUrlModule,
+  HikingTrailModule,
   CampgroundDetailModule,
+  BookingUrlModule,
 } = require('../services/promptBuilder');
 const { getCache, computeHash } = require('../services/cache');
 const { getRouteInfo } = require('../services/routeService');
@@ -568,13 +569,29 @@ exports.aiEvaluate = async (req, res) => {
     }
 
     // 3. Prompt oluştur ve LLM'e gönder
-    const builder = new PromptBuilder()
-      .register(new WeatherModule())
-      .register(new AnnouncementModule())
-      .register(new AlternativeLocationModule())
-      .register(new RouteConditionModule())
-      .register(new CampgroundDetailModule())
-      .register(new BookingUrlModule());
+    const builder = new PromptBuilder();
+
+    const normalizedType = String(campType ?? '').toLowerCase();
+    const isHiking = normalizedType.includes('yürüyüş') || normalizedType.includes('yuruyus') || normalizedType.includes('parkur') || normalizedType.includes('trekking') || normalizedType.includes('hiking');
+
+    if (isHiking) {
+      builder
+        .register(new WeatherModule())
+        .register(new AnnouncementModule())
+        .register(new HikingTrailModule())
+        .register(new RouteConditionModule())
+        .register(new CampgroundDetailModule())
+        .register(new AlternativeLocationModule())
+        .register(new BookingUrlModule());
+    } else {
+      builder
+        .register(new WeatherModule())
+        .register(new AnnouncementModule())
+        .register(new AlternativeLocationModule())
+        .register(new RouteConditionModule())
+        .register(new CampgroundDetailModule())
+        .register(new BookingUrlModule());
+    }
 
     const { messages, modules } = builder.buildStructured(ctx);
 

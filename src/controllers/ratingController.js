@@ -26,13 +26,23 @@ async function optionalAuthenticate(req) {
   }
 }
 
+async function findCampgroundByIdOrExternal(idOrExternal) {
+  if (!idOrExternal) return null;
+  let campground = await Campground.findOne({ where: { external_id: idOrExternal } });
+  if (!campground) {
+    const id = parseInt(idOrExternal, 10);
+    if (!isNaN(id)) {
+      campground = await Campground.findByPk(id);
+    }
+  }
+  return campground;
+}
+
 async function listRatings(req, res) {
   try {
-    const campgroundId = parseInt(req.params.id, 10);
-    if (isNaN(campgroundId)) return res.status(400).json({ error: 'Invalid campground id' });
-
-    const camp = await Campground.findByPk(campgroundId);
-    if (!camp) return res.status(404).json({ error: 'Campground not found' });
+    const campground = await findCampgroundByIdOrExternal(req.params.id);
+    if (!campground) return res.status(404).json({ error: 'Campground not found' });
+    const campgroundId = campground.id;
 
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const per_page = Math.min(100, Math.max(1, parseInt(req.query.per_page, 10) || 20));
@@ -100,8 +110,9 @@ async function listRatings(req, res) {
 
 async function createOrUpdateRating(req, res) {
   try {
-    const campgroundId = parseInt(req.params.id, 10);
-    if (isNaN(campgroundId)) return res.status(400).json({ error: 'Invalid campground id' });
+    const campground = await findCampgroundByIdOrExternal(req.params.id);
+    if (!campground) return res.status(404).json({ error: 'Campground not found' });
+    const campgroundId = campground.id;
 
     const body = req.body || {};
     const ratingVal = body.rating;
@@ -165,8 +176,9 @@ async function createOrUpdateRating(req, res) {
 
 async function deleteMyRating(req, res) {
   try {
-    const campgroundId = parseInt(req.params.id, 10);
-    if (isNaN(campgroundId)) return res.status(400).json({ error: 'Invalid campground id' });
+    const campground = await findCampgroundByIdOrExternal(req.params.id);
+    if (!campground) return res.status(404).json({ error: 'Campground not found' });
+    const campgroundId = campground.id;
 
     const user = req.user;
     if (!user || !user.id) return res.status(401).json({ error: 'Unauthorized' });
@@ -196,10 +208,9 @@ async function deleteMyRating(req, res) {
 
 async function getSummary(req, res) {
   try {
-    const campgroundId = parseInt(req.params.id, 10);
-    if (isNaN(campgroundId)) return res.status(400).json({ error: 'Invalid campground id' });
-    const camp = await Campground.findByPk(campgroundId);
-    if (!camp) return res.status(404).json({ error: 'Campground not found' });
+    const campground = await findCampgroundByIdOrExternal(req.params.id);
+    if (!campground) return res.status(404).json({ error: 'Campground not found' });
+    const campgroundId = campground.id;
 
     const agg = await Rating.findAll({
       attributes: [[db.sequelize.fn('AVG', db.sequelize.col('rating')), 'ratingAvg'], [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'count']],
@@ -216,9 +227,11 @@ async function getSummary(req, res) {
 
 async function moderateRating(req, res) {
   try {
-    const campgroundId = parseInt(req.params.id, 10);
+    const campground = await findCampgroundByIdOrExternal(req.params.id);
+    if (!campground) return res.status(404).json({ error: 'Campground not found' });
+    const campgroundId = campground.id;
     const ratingId = parseInt(req.params.ratingId, 10);
-    if (isNaN(campgroundId) || isNaN(ratingId)) return res.status(400).json({ error: 'Invalid id' });
+    if (isNaN(ratingId)) return res.status(400).json({ error: 'Invalid id' });
 
     const actingUser = await User.findByPk(req.user && req.user.id);
     if (!actingUser || !(['admin', 'superadmin'].includes(actingUser.role))) return res.status(403).json({ error: 'Forbidden' });
@@ -256,9 +269,11 @@ async function moderateRating(req, res) {
 
 async function flagRating(req, res) {
   try {
-    const campgroundId = parseInt(req.params.id, 10);
+    const campground = await findCampgroundByIdOrExternal(req.params.id);
+    if (!campground) return res.status(404).json({ error: 'Campground not found' });
+    const campgroundId = campground.id;
     const ratingId = parseInt(req.params.ratingId, 10);
-    if (isNaN(campgroundId) || isNaN(ratingId)) return res.status(400).json({ error: 'Invalid id' });
+    if (isNaN(ratingId)) return res.status(400).json({ error: 'Invalid id' });
 
     const body = req.body || {};
     const reason = body.reason ? String(body.reason).slice(0, 500) : null;

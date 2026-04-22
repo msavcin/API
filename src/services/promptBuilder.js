@@ -100,6 +100,45 @@ class RouteConditionModule {
   }
 }
 
+class HikingTrailModule {
+  get id() { return 'hikingTrail'; }
+
+  buildPrompt(ctx) {
+    const campType = String(ctx.campType ?? '').toLowerCase();
+    if (!campType.includes('yürüyüş') && !campType.includes('yuruyus') && !campType.includes('parkur') && !campType.includes('trekking') && !campType.includes('hiking')) {
+      return null;
+    }
+
+    const d = ctx.campingArea?.dbDetails ?? ctx.campingArea ?? {};
+    const route = ctx.routeInfo ?? {};
+    const lines = [];
+
+    if (d.trail_length) lines.push(`Rota uzunluğu: ${d.trail_length}${typeof d.trail_length === 'number' ? ' km' : ''}`);
+    else if (route.distanceKm) lines.push(`Rota uzunluğu (yaklaşık): ${route.distanceKm} km`);
+
+    if (d.elevation_gain) lines.push(`Toplam yükselme: ${d.elevation_gain} m`);
+    if (d.difficulty) lines.push(`Zorluk: ${d.difficulty}`);
+    if (d.trail_type) lines.push(`Rota tipi: ${d.trail_type}`);
+    if (typeof d.camping_allowed !== 'undefined') lines.push(`Rota üzerinde kamp izni: ${d.camping_allowed ? 'Evet' : 'Hayır'}`);
+    if (d.water_sources) lines.push(`Su kaynakları: ${Array.isArray(d.water_sources) ? d.water_sources.join(', ') : d.water_sources}`);
+    if (d.shelters) lines.push(`Sığınak/Barınak: ${Array.isArray(d.shelters) ? d.shelters.join(', ') : d.shelters}`);
+    if (d.permit_required) lines.push(`İzin gerekebilir: ${d.permit_required ? 'Evet' : 'Hayır'}`);
+    if (route.summary) lines.push(`Rota özeti: ${String(route.summary).slice(0, 200)}`);
+    if (route.note) lines.push(`Rota notu: ${String(route.note).slice(0, 200)}`);
+
+    if (!lines.length) lines.push('Rota bilgisi: (detay yok)');
+
+    lines.push('');
+    lines.push('ÖNEMLİ (Yürüyüş parkuru önceliği): Bu değerlendirme yürüyüş parkuru olduğu için LLM\'den özellikle şu bilgileri isteme:');
+    lines.push('- Tahmini yürüyüş süresi ve zorluklu etaplar; akarsu/geçişler; taşlık, dik iniş/çıkış; exposure ve tehlikeli bölümler.');
+    lines.push('- Gece kampı için güvenli noktalar, su kaynakları, izin gereksinimleri, acil çıkış/erişim noktaları.');
+    lines.push('- Ekipman listesi (ayakkabı, baton, su arıtma, harita/GPS, gece ışığı vb.) ve hava değişikliğine karşı öneriler.');
+    lines.push('- Kısa alternatif kamp alanı önerileri (en yakın 3) ve nedenleri.');
+
+    return `[YURUYUS]\n${lines.join('\n')}`;
+  }
+}
+
 class CampgroundDetailModule {
   get id() { return 'campgroundDetail'; }
 
@@ -405,6 +444,7 @@ module.exports = {
   AnnouncementModule,
   AlternativeLocationModule,
   RouteConditionModule,
+  HikingTrailModule,
   BookingUrlModule,
   CampgroundDetailModule,
   estimateTokens,

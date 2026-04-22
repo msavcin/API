@@ -25,14 +25,48 @@ exports.listUsers = async (req, res) => {
     res.status(500).json({ error: 'Kullanıcılar listelenemedi', detail: err.message });
   }
 };
-// Kullanıcıya güncel rol ile yeni JWT token üretir (refresh token endpointi)
+// Refresh token endpointi: hem eski auth-based kullanım hem de body ile gelen refreshToken desteklenir
 exports.refreshToken = async (req, res) => {
-  const db = require('../models');
-  const User = db.User || require('../models/user');
-  const user = await User.findByPk(req.user.id);
-  if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
-  const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '10d' });
-  res.json({ token });
+  try {
+    const db = require('../models');
+    const RefreshToken = db.RefreshToken || require('../models/refreshToken');
+    const User = db.User || require('../models/user');
+    const crypto = require('crypto');
+
+    // Eğer body içinde refreshToken geldiyse rotation ile yenile
+    const provided = req.body && req.body.refreshToken;
+    if (!provided) {
+      // Fallback: authMiddleware ile gelen istekler için eski davranış (sadece yeni access token üretir)
+      if (!req.user || !req.user.id) return res.status(400).json({ error: 'refreshToken gerekli veya Authorization header ile istek atın' });
+      const user = await User.findByPk(req.user.id);
+      if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+      const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '10d' });
+      return res.json({ token });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(provided).digest('hex');
+    const record = await RefreshToken.findOne({ where: { token_hash: tokenHash } });
+    if (!record || record.revoked) return res.status(403).json({ error: 'Geçersiz refresh token' });
+    if (record.expires_at && new Date(record.expires_at) < new Date()) return res.status(403).json({ error: 'Refresh token süresi dolmuş' });
+
+    const user = await User.findByPk(record.user_id);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    // Yeni access token
+    const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '10d' });
+
+    // Token rotation: eski tokeni iptal et, yenisini oluştur
+    await record.update({ revoked: true });
+    const newRaw = 'rftk_' + crypto.randomBytes(32).toString('hex');
+    const newHash = crypto.createHash('sha256').update(newRaw).digest('hex');
+    const expiresAt = new Date(Date.now() + (parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS || '30', 10) * 24 * 60 * 60 * 1000));
+    await RefreshToken.create({ user_id: user.id, token_hash: newHash, expires_at: expiresAt });
+
+    return res.json({ token, refreshToken: newRaw });
+  } catch (err) {
+    console.error('[refreshToken] Hata:', err);
+    return res.status(500).json({ error: 'Token yenilenemedi', detail: err && err.message });
+  }
 };
 // Kullanıcı işlemleri controller
 
@@ -82,7 +116,18 @@ exports.register = async (req, res) => {
   // Kayıt başarılıysa doğrulama kodunu sil
   await EmailVerificationCode.destroy({ where: { email } });
   const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '10d' });
-  res.status(201).json({ id: user.id, name: user.name, username: user.username, email: user.email, offline_enabled: user.offline_enabled, token });
+  // Oluşturulan refresh token'i DB'ye kaydet ve client'a gönder
+  try {
+    const RefreshToken = db.RefreshToken || require('../models/refreshToken');
+    const rawRefresh = 'rftk_' + crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawRefresh).digest('hex');
+    const expiresAt = new Date(Date.now() + (parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS || '30', 10) * 24 * 60 * 60 * 1000));
+    await RefreshToken.create({ user_id: user.id, token_hash: tokenHash, expires_at: expiresAt });
+    res.status(201).json({ id: user.id, name: user.name, username: user.username, email: user.email, offline_enabled: user.offline_enabled, token, refreshToken: rawRefresh });
+  } catch (e) {
+    console.warn('[REFRESH_TOKEN] oluşturulamadı:', e && e.message);
+    res.status(201).json({ id: user.id, name: user.name, username: user.username, email: user.email, offline_enabled: user.offline_enabled, token });
+  }
 };
 
 const db = require('../models');
@@ -90,6 +135,7 @@ const User = db.User || require('../models/user');
 const JWT_SECRET = process.env.JWT_SECRET || 'demo_secret_key';
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 
 exports.login = async (req, res) => {
@@ -138,7 +184,21 @@ exports.login = async (req, res) => {
   }
   const freshUser = await UserModel.findByPk(user.id);
   const token = jwt.sign({ id: freshUser.id, name: freshUser.name, username: freshUser.username, email: freshUser.email, role: freshUser.role }, JWT_SECRET, { expiresIn: '10d' });
-  res.json(forceLogout ? { forceLogout: true } : { token });
+  if (forceLogout) {
+    res.json({ forceLogout: true });
+  } else {
+    try {
+      const RefreshToken = db.RefreshToken || require('../models/refreshToken');
+      const rawRefresh = 'rftk_' + crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawRefresh).digest('hex');
+      const expiresAt = new Date(Date.now() + (parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS || '30', 10) * 24 * 60 * 60 * 1000));
+      await RefreshToken.create({ user_id: freshUser.id, token_hash: tokenHash, expires_at: expiresAt });
+      res.json({ token, refreshToken: rawRefresh });
+    } catch (e) {
+      console.warn('[REFRESH_TOKEN] oluşturulamadı:', e && e.message);
+      res.json({ token });
+    }
+  }
 };
 
 const CommunityMember = db.CommunityMember || require('../models/communityMember');
