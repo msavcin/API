@@ -40,9 +40,11 @@ const {
   HikingTrailModule,
   CampgroundDetailModule,
   BookingUrlModule,
+  WebResearchModule,
 } = require('../services/promptBuilder');
 const { getCache, computeHash } = require('../services/cache');
 const { getRouteInfo } = require('../services/routeService');
+const { researchLocation } = require('../services/webResearchService');
 
 const CACHE_TTL = parseInt(process.env.AI_EVAL_CACHE_TTL_SEC ?? '3600', 10);
 const AI_PROVIDER = process.env.AI_PROVIDER || 'ollama';
@@ -508,8 +510,14 @@ exports.aiEvaluate = async (req, res) => {
       console.log(`[PLANNER] Kamp alanı DB'den yüklendi: ${dbCampground.name} (external_id: ${campingArea?.external_id})`);
     }
 
-    // Faz 2: Dış HTTP isteği (zenginleştirilmiş booking_url kullanır)
-    const bookingUrlContent = await fetchBookingUrlContent(enrichedCampingArea?.booking_url);
+    // Faz 2: Paralel dış HTTP istekleri — booking_url sayfası + web araştırması
+    const [bookingUrlContent, webResearch] = await Promise.all([
+      fetchBookingUrlContent(enrichedCampingArea?.booking_url),
+      researchLocation({ name: enrichedCampingArea?.name, lat: campLat, lng: campLng }),
+    ]);
+    if (webResearch?.osmTags || webResearch?.googlePlaces) {
+      console.log(`[PLANNER] Web araştırması tamamlandı — OSM: ${!!webResearch.osmTags}, Google: ${!!webResearch.googlePlaces}`);
+    }
 
     // Frontend'den gelen duyuruları DB sonuçlarıyla birleştir (id ile deduplicate)
     const frontendItems = (Array.isArray(frontendAnnouncements)
@@ -555,6 +563,7 @@ exports.aiEvaluate = async (req, res) => {
       nearbyAreas,
       routeInfo,
       bookingUrlContent,
+      webResearch: (webResearch?.osmTags || webResearch?.googlePlaces) ? webResearch : undefined,
     };
 
     // 2. Cache kontrol — key: provider + içerik hash'i (aynı ctx+mode tekrar API'ye gitmez)
@@ -582,7 +591,8 @@ exports.aiEvaluate = async (req, res) => {
         .register(new RouteConditionModule())
         .register(new CampgroundDetailModule())
         .register(new AlternativeLocationModule())
-        .register(new BookingUrlModule());
+        .register(new BookingUrlModule())
+        .register(new WebResearchModule());
     } else {
       builder
         .register(new WeatherModule())
@@ -590,13 +600,19 @@ exports.aiEvaluate = async (req, res) => {
         .register(new AlternativeLocationModule())
         .register(new RouteConditionModule())
         .register(new CampgroundDetailModule())
-        .register(new BookingUrlModule());
+        .register(new BookingUrlModule())
+        .register(new WebResearchModule());
     }
 
-    const { messages, modules } = builder.buildStructured(ctx);
-
-    // 4. LLM'e gönder — mode'a göre provider seç
+    // Provider'a göre token bütçesi: DeepSeek → bol token; Groq free tier → 6000 TPM sınırı
+    const PROVIDER_TOKEN_CONFIG = {
+      deepseek: { tokenBudget: 8000, maxTokens: 6000 },
+      groq:     { tokenBudget: 2500, maxTokens: 2500 },
+    };
     const activeProvider = HYBRID_PROVIDERS[mode] ?? AI_PROVIDER;
+    const tokenCfg = PROVIDER_TOKEN_CONFIG[activeProvider] ?? { tokenBudget: 3500, maxTokens: 4000 };
+
+    const { messages, modules } = builder.buildStructured(ctx, { tokenBudget: tokenCfg.tokenBudget });
     let rawResponse;
     let structuredData = null;
     let evaluation = null;
@@ -613,8 +629,8 @@ exports.aiEvaluate = async (req, res) => {
       // - jsonMode: Groq/DeepSeek response_format ile JSON zorunlu — <think> baskılanır
       // - noReasoning: reasoning_format eklenmez (yedek güvenlik)
       // - temperature: 0.2  → format tutarlılığı
-      // - maxTokens: 4000   → tüm kategoriler kesilmeden sığsın
-      const aiPromise = ai.chat(messages, { temperature: 0.2, noReasoning: true, jsonMode: true, maxTokens: 4000 });
+      // - maxTokens: provider'a göre (deepseek: 6000, groq: 2500)
+      const aiPromise = ai.chat(messages, { temperature: 0.2, noReasoning: true, jsonMode: true, maxTokens: tokenCfg.maxTokens });
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error(`Controller timeout (${CONTROLLER_TIMEOUT_MS}ms)`)), CONTROLLER_TIMEOUT_MS)
       );

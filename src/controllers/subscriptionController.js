@@ -814,18 +814,32 @@ exports.googleWebhook = async (req, res) => {
 exports.getPrices = async (req, res) => {
   try {
     const rows = await SubscriptionPrice.findAll({
-      attributes: ['platform', 'plan', 'price'],
+      attributes: ['platform', 'plan', 'price', 'campaign_price', 'campaign_duration_months', 'campaign_label', 'campaign_promo_offer_id'],
       order: [['platform', 'ASC'], ['plan', 'ASC']],
     });
 
     // { ios: { monthly: '₺49,99', yearly: '₺399,99' }, android: { ... } }
     const prices = {};
+
+    // campaigns: { ios: { monthly: CampaignInfo|null, yearly: CampaignInfo|null }, android: { ... } }
+    const campaigns = {};
+
     for (const row of rows) {
       if (!prices[row.platform]) prices[row.platform] = {};
       prices[row.platform][row.plan] = row.price;
+
+      if (!campaigns[row.platform]) campaigns[row.platform] = {};
+      campaigns[row.platform][row.plan] = row.campaign_price
+        ? {
+            price:          row.campaign_price,
+            durationMonths: row.campaign_duration_months,
+            ...(row.campaign_label          ? { label:        row.campaign_label }          : {}),
+            ...(row.campaign_promo_offer_id ? { promoOfferId: row.campaign_promo_offer_id } : {}),
+          }
+        : null;
     }
 
-    return res.json({ success: true, prices });
+    return res.json({ success: true, prices, campaigns });
   } catch (error) {
     console.error('[Subscription] getPrices error:', error);
     return res.status(500).json({ error: 'Fiyatlar alınamadı' });

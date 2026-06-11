@@ -179,6 +179,99 @@ class BookingUrlModule {
   }
 }
 
+class WebResearchModule {
+  get id() { return 'webResearch'; }
+
+  // Evet/hayır değerlerini Türkçeye çevirir
+  static yn(val, yesLabel = 'Mevcut', noLabel = 'Yok') {
+    if (!val) return null;
+    if (val === 'yes' || val === 'hot' || val === 'cold' || val === 'hookup') return yesLabel;
+    if (val === 'no') return noLabel;
+    return val; // 'wlan', 'leashed' gibi özel değerler olduğu gibi
+  }
+
+  buildPrompt(ctx) {
+    const wr = ctx.webResearch;
+    if (!wr) return null;
+
+    const lines = [];
+
+    // --- OSM (Overpass) verileri ---
+    if (wr.osmTags) {
+      const t = wr.osmTags;
+      if (t.osmName)      lines.push(`OSM Adi: ${t.osmName}`);
+      if (t.stars)        lines.push(`Yildiz (OSM): ${t.stars}`);
+      if (t.description)  lines.push(`Aciklama (OSM): ${t.description}`);
+      if (t.operator)     lines.push(`Isletmeci: ${t.operator}`);
+
+      // Ücret
+      if (t.fee === 'yes') lines.push('Ucret: Ucretli');
+      else if (t.fee === 'no') lines.push('Ucret: Ucretsiz');
+      if (t.feeDaily)     lines.push(`Gunluk Ucret: ${t.feeDaily}`);
+
+      // Kapasite
+      if (t.capacity)         lines.push(`Toplam Kapasite: ${t.capacity} kisi`);
+      if (t.capacityTents)    lines.push(`Cadir Kapasitesi: ${t.capacityTents}`);
+      if (t.capacityCaravans) lines.push(`Karavan Kapasitesi: ${t.capacityCaravans}`);
+      if (t.maxstay)          lines.push(`Maksimum Kalis: ${t.maxstay}`);
+
+      // Tesis olanakları — mevcut olanları grupla
+      const facilities = [];
+      const f = (val, label) => { const r = WebResearchModule.yn(val); if (r && r !== 'Yok') facilities.push(label + (r !== 'Mevcut' ? ` (${r})` : '')); };
+      f(t.shower,       'Dus');
+      f(t.toilets,      'Tuvalet');
+      f(t.drinkingWater,'Icme Suyu');
+      f(t.electricity,  'Elektrik');
+      f(t.internet,     'Internet/WiFi');
+      f(t.swimmingPool, 'Yuzme Havuzu');
+      f(t.playground,   'Oyun Alani');
+      f(t.laundry,      'Camasir');
+      f(t.kitchen,      'Ortak Mutfak');
+      f(t.sanitaryDump, 'Atik Bosaltma');
+      f(t.lit,          'Aydinlatma');
+      if (facilities.length) lines.push(`Mevcut Tesisler: ${facilities.join(', ')}`);
+
+      // Konaklama tipleri
+      const types = [];
+      if (WebResearchModule.yn(t.tents) === 'Mevcut')         types.push('Cadir');
+      if (WebResearchModule.yn(t.caravans) === 'Mevcut')      types.push('Karavan');
+      if (WebResearchModule.yn(t.staticCaravans) === 'Mevcut') types.push('Sabit Karavan');
+      if (types.length) lines.push(`Konaklama Tipleri: ${types.join(', ')}`);
+
+      // Politikalar
+      if (t.dogs) lines.push(`Evcil Hayvan: ${t.dogs === 'yes' ? 'Serbest' : t.dogs === 'leashed' ? 'Tasma ile' : 'Yasak'}`);
+
+      // Zaman / iletişim
+      if (t.checkIn || t.checkOut) {
+        const ci = t.checkIn ? `Giris: ${t.checkIn}` : '';
+        const co = t.checkOut ? `Cikis: ${t.checkOut}` : '';
+        lines.push([ci, co].filter(Boolean).join(' | '));
+      }
+      if (t.openingHours) lines.push(`Sezon / Calisma: ${t.openingHours}`);
+    }
+
+    // --- Google Places verileri ---
+    if (wr.googlePlaces) {
+      const g = wr.googlePlaces;
+      if (g.rating)     lines.push(`Google Puan: ${g.rating}/5${g.totalRatings ? ` (${g.totalRatings} yorum)` : ''}`);
+      if (g.priceLevel) lines.push(`Fiyat Seviyesi: ${g.priceLevel}`);
+      if (g.summary)    lines.push(`Google Ozet: ${g.summary}`);
+      if (g.phone && !wr.osmTags?.phone)   lines.push(`Telefon: ${g.phone}`);
+      if (g.openingHours?.length && !wr.osmTags?.openingHours) {
+        lines.push(`Calisma Saatleri: ${g.openingHours.slice(0, 3).join(' | ')}`);
+      }
+      if (g.reviews?.length) {
+        const reviewLines = g.reviews.map(rv => `- ${rv.rating}/5 (${rv.time}): "${rv.text}"`);
+        lines.push(`Google Ziyaretci Yorumlari:\n${reviewLines.join('\n')}`);
+      }
+    }
+
+    if (!lines.length) return null;
+    const label = wr.isBusinessLike ? '[WEB_ARASTIRMA - Isletme]' : '[WEB_ARASTIRMA - OSM]';
+    return `${label}\n${lines.join('\n')}`;
+  }
+}
+
 const SYSTEM_PROMPT = `Sen deneyimli bir kamp rehberi, seyahat planlayicisi ve outdoor uzmansin.
 Kullanicinin kamp planina gore DETAYLI, GERCEKCI ve PRATIK analiz yap.
 Amac: Sahada ise yarayan kritik detaylari vermek.
@@ -225,9 +318,10 @@ Kurallar:
 - 3a bolumu yalnizca [ALAN_SAYFASI] verisi varsa yaz; yoksa atla.
 - [KAMP_ALANI_DB] verisi varsa 3. KAMP ALANI ANALIZI bolumunde olanaklar, puan ve ucret bilgisi olarak kullan.
 - [ALAN_SAYFASI] verisini kullanirken ham HTML kalintisi olan duzensiz cumleleri atla, anlamli bilgileri ozetle.
+- [WEB_ARASTIRMA] verisi mevcutsa: OSM etiketlerini (tesis/olanak/kapasite) KAMP ALANI ANALIZI icerisinde kullan. Google yorumlarini ayri bir alt baslik olarak "Ziyaretci Yorumlarindan One Cikanlar" seklinde ozet sun; ham yorum metnini aynen kopyalama, yorumla.
 - Turkce yaz, Markdown kullan`;
 
-const TOKEN_BUDGET = 3500; // Groq free tier: 6000 TPM toplam, output icin ~3000 birak
+const TOKEN_BUDGET = 3500; // Varsayılan (Groq free tier: 6000 TPM toplam, output icin ~2500 birak)
 
 // ---------------------------------------------------------------------------
 // Yapısal (structured) çıktı için sistem promptu
@@ -274,9 +368,10 @@ KATEGORILER (sirayla):
    - Puan varsa rating (max:5)
    - Ucret/kapasite key-value
    - Artilar/eksiler bullet
-4. icon:"Info" title:"Alan Detaylari" isWeather:false — YALNIZCA [ALAN_SAYFASI] veya [KAMP_ALANI_DB] varsa uret, yoksa bu kategoriyi EKLEME
-   - Tesisler/olanaklar bullet
+4. icon:"Info" title:"Alan Detaylari" isWeather:false — YALNIZCA [ALAN_SAYFASI], [KAMP_ALANI_DB] veya [WEB_ARASTIRMA] varsa uret, yoksa bu kategoriyi EKLEME
+   - Tesisler/olanaklar bullet ([WEB_ARASTIRMA] OSM verisi dahil)
    - Fiyat key-value
+   - [WEB_ARASTIRMA] Google yorumlari varsa: rating item (max:5) + en cok tekrar eden artilari/eksiler bullet
 5. icon:"MapPin" title:"Alternatif Alanlar" isWeather:false — YALNIZCA [ALTERNATIF] verisi varsa uret
    - Her alan key-value (label: ad, value: mesafe+puan)
 6. icon:"ShoppingBag" title:"Temel Ihtiyaclar" isWeather:false
@@ -289,6 +384,7 @@ KURALLAR:
 - Konaklama turu ne ise TUM analiz O TURUNE gore yap
 - Riskler mutlaka alert ile belirt
 - Veri olmayan kategorileri EKLEME (site_details, alternatives)
+- [WEB_ARASTIRMA] verisi varsa: Google rating degerini 4. kategoride rating item olarak, Google yorumlarindaki tekrar eden temaları bullet item olarak ekle
 - Sadece gecerli JSON don
 - Turkce yaz`;
 
@@ -375,8 +471,12 @@ class PromptBuilder {
   /**
    * Yapısal (structured) JSON çıktısı için prompt üretir.
    * build() ile aynı veri hazırlığını yapar, yalnızca sistem promptu farklıdır.
+   * @param {object} ctx - EvaluationContext
+   * @param {object} [opts]
+   * @param {number} [opts.tokenBudget] - Input token bütçesi (provider'a göre ayarlanır)
    */
-  buildStructured(ctx) {
+  buildStructured(ctx, opts = {}) {
+    const tokenBudget = opts.tokenBudget ?? TOKEN_BUDGET;
     const isReasoning = (process.env.GROQ_MODEL ?? '').includes('qwen3') ||
       (process.env.GROQ_MODEL ?? '').includes('gpt-oss');
     const useSystem = !isReasoning || process.env.GROQ_REASONING === 'false';
@@ -420,15 +520,15 @@ class PromptBuilder {
     const sysTokens = useSystem ? estimateTokens(STRUCTURED_SYSTEM_PROMPT) : 0;
     const totalTokens = sysTokens + estimateTokens(userContent);
 
-    if (totalTokens > TOKEN_BUDGET) {
-      const available = TOKEN_BUDGET - sysTokens - estimateTokens(`${sysText}${dateLine} | ${typeLine}\n${loc.join(' | ')}\n\n`);
+    if (totalTokens > tokenBudget) {
+      const available = tokenBudget - sysTokens - estimateTokens(`${sysText}${dateLine} | ${typeLine}\n${loc.join(' | ')}\n\n`);
       const maxChars = Math.max(200, Math.floor(available * 3.5));
       dataBlock = dataBlock.slice(0, maxChars);
       userContent = `${sysText}${dateLine} | ${typeLine}\n${loc.join(' | ')}\n\n${dataBlock}`;
       console.log(`[PROMPT] Structured — token budget asildi, veri ${maxChars} karaktere kirpildi`);
     }
 
-    console.log(`[PROMPT] Structured — Tahmini token: ~${sysTokens + estimateTokens(userContent)} (budget: ${TOKEN_BUDGET})`);
+    console.log(`[PROMPT] Structured — Tahmini token: ~${sysTokens + estimateTokens(userContent)} (budget: ${tokenBudget})`);
 
     const messages = useSystem
       ? [{ role: 'system', content: STRUCTURED_SYSTEM_PROMPT }, { role: 'user', content: userContent }]
@@ -447,5 +547,6 @@ module.exports = {
   HikingTrailModule,
   BookingUrlModule,
   CampgroundDetailModule,
+  WebResearchModule,
   estimateTokens,
 };
