@@ -12,7 +12,16 @@ const app = express();
 
 // CORS middleware - tüm route'lardan önce ekle
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://www.kampdefterim.com'); // Test için *, production'da 'https://www.kampdefterim.com'
+  // Development: tüm originlere izin ver | Production: izin verilen domainler
+  const allowedOrigins = process.env.NODE_ENV === 'production' 
+    ? ['https://www.kampdefterim.com', 'https://kampdefterim.com', 'https://www.veronicapeyzaj.com', 'https://veronicapeyzaj.com']
+    : '*';
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins === '*' || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
+    res.header('Access-Control-Allow-Origin', allowedOrigins === '*' ? '*' : origin);
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
@@ -50,6 +59,14 @@ app.use('/node/licenses', bodyParser.json(), require('./routes/licenses'));
 app.use('/node/planner', bodyParser.json(), require('./routes/planner'));
 // Chat routes
 app.use('/node/chat', bodyParser.json(), require('./routes/chat'));
+// AI Review routes (Google Places entegrasyonu ve AI değerlendirme)
+// Üç farklı prefix ile desteklenir: /admin/, /camping-areas/, /campgrounds/
+const aiReviewRoutes = require('./routes/aiReview');
+app.use('/node/admin', bodyParser.json(), aiReviewRoutes); // AI review admin endpoint'leri
+app.use('/node/camping-areas', bodyParser.json(), aiReviewRoutes);
+app.use('/node/campgrounds', bodyParser.json(), aiReviewRoutes); // geriye uyumluluk
+// Admin Settings routes
+app.use('/node/admin', bodyParser.json(), require('./routes/adminSettings'));
 
 // Sunucuyu başlat
 const PORT = process.env.PORT || 3000;

@@ -39,6 +39,12 @@ const Campground = db.sequelize.define('Campground', {
   images: { type: DataTypes.TEXT, defaultValue: '[]' },
   province: { type: DataTypes.JSONB, allowNull: true },
   deleted: { type: DataTypes.INTEGER, defaultValue: 0 },
+  // AI Review fields
+  ai_review_evaluation: { type: DataTypes.TEXT, allowNull: true },
+  ai_review_generated_at: { type: DataTypes.DATE, allowNull: true },
+  ai_review_enabled: { type: DataTypes.BOOLEAN, defaultValue: true },
+  google_place_id: { type: DataTypes.STRING, allowNull: true },
+  last_google_sync_at: { type: DataTypes.DATE, allowNull: true },
 }, {
   tableName: 'campgrounds',
   timestamps: false
