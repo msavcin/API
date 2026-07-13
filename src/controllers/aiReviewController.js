@@ -104,7 +104,7 @@ async function checkDailyLimit() {
 /**
  * Helper: AI ile kamp alanı yorumlarını değerlendir
  */
-async function evaluateWithAI(campgroundName, location, reviewSummary) {
+async function evaluateWithAI(campgroundName, location, reviewSummary, totalReviewCount, sampleReviewCount) {
   try {
     const ai = AIAdapterFactory.create(AI_PROVIDER);
     
@@ -118,17 +118,23 @@ Değerlendirmen şunları içermeli:
 - Avantajlar ve dezavantajlar
 - Hangi tip kampçılar için uygun olduğu
 
+ÖNEMLİ: Sana verilen yorumlar Google Places'teki tüm yorumların sadece bir örneğidir. Toplam yorum sayısı ile senin analiz ettiğin örnek yorum sayısı farklı olabilir. Değerlendirmende YALNIZCA TOPLAM YORUM SAYISINI kullan ve kesinlikle örnek yorum sayısını belirtme.
+
 2-3 paragrafta, Türkçe, samimi ve bilgilendirici bir dille yaz.`;
+
+    const reviewCountInfo = totalReviewCount > 0 
+      ? `\n**TOPLAM YORUM SAYISI:** ${totalReviewCount} yorum (Aşağıda ${sampleReviewCount} örnek yorum gösterilmektedir)`
+      : '';
 
     const userPrompt = `Aşağıdaki kamp alanı hakkında Google Places yorumlarını analiz et:
 
 **Kamp Alanı:** ${campgroundName}
-**Konum:** ${location}
+**Konum:** ${location}${reviewCountInfo}
 
-**Google Places Yorumları:**
+**Örnek Yorumlar:**
 ${reviewSummary}
 
-Lütfen değerlendirmeni yaz.`;
+Lütfen değerlendirmeni yaz. UNUTMA: Bu kamp alanı hakkında TOPLAM ${totalReviewCount} yorum bulunmaktadır. Değerlendirmende bu sayıyı kullan.`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -144,8 +150,11 @@ Lütfen değerlendirmeni yaz.`;
     return response.trim();
   } catch (error) {
     console.error('AI değerlendirme hatası:', error.message);
-    // Fallback: basit özet
-    return `Bu kamp alanı hakkında ${reviewSummary.split('\n\n').length} kullanıcı yorumu bulunmaktadır. Detaylı bilgi için Google Places'i ziyaret edebilirsiniz.`;
+    // Fallback: basit özet - totalReviewCount kullan
+    const reviewInfo = totalReviewCount > 0 
+      ? `${totalReviewCount} kullanıcı yorumu`
+      : 'henüz yorum';
+    return `Bu kamp alanı hakkında Google Places üzerinde ${reviewInfo} bulunmaktadır. Detaylı bilgi için Google Places'i ziyaret edebilirsiniz.`;
   }
 }
 
@@ -371,6 +380,9 @@ exports.evaluateCampgroundReview = async (req, res) => {
     }
 
     // Yorumları özetle
+    const totalReviewCount = placeDetails.user_ratings_total || 0;
+    const sampleReviewCount = placeDetails.reviews?.length || 0;
+    
     let reviewSummary = 'Bu kamp alanı için Google Places üzerinde henüz yorum bulunmuyor.';
     
     if (placeDetails.reviews && placeDetails.reviews.length > 0) {
@@ -383,15 +395,18 @@ exports.evaluateCampgroundReview = async (req, res) => {
     const aiEvaluation = await evaluateWithAI(
       campground.name,
       campground.formatted_address || `${campground.latitude}, ${campground.longitude}`,
-      reviewSummary
+      reviewSummary,
+      totalReviewCount,
+      sampleReviewCount
     );
 
     // Veritabanını güncelle
     const updateData = {
       ai_review_evaluation: aiEvaluation,
-      ai_review_generated_at: new Date(),
+      ai_review_generated_at: new Date().toISOString(),
       google_place_id: placeId,
-      last_google_sync_at: new Date()
+      last_google_sync_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     // Google'dan alınan diğer bilgileri güncelle
@@ -599,7 +614,8 @@ exports.deleteAiReview = async (req, res) => {
     await db.Campground.update(
       {
         ai_review_evaluation: null,
-        ai_review_generated_at: null
+        ai_review_generated_at: null,
+        updated_at: new Date().toISOString()
       },
       { where: { id } }
     );
@@ -625,7 +641,10 @@ exports.toggleAiReview = async (req, res) => {
     const { enabled } = req.body;
 
     await db.Campground.update(
-      { ai_review_enabled: enabled },
+      { 
+        ai_review_enabled: enabled,
+        updated_at: new Date().toISOString()
+      },
       { where: { id } }
     );
 
