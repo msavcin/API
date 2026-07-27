@@ -3,6 +3,28 @@ const Campground = db.Campground || require('../models/campground');
 const { Op } = require('sequelize');
 const enrichmentService = require('../services/campgroundEnrichmentService');
 
+async function getNonPremiumCampingAreaLimit() {
+  try {
+    const AppSetting = db.AppSetting || require('../models/appSetting');
+    const setting = await AppSetting.findByPk('non_premium_camping_area_limit');
+    const parsed = parseInt(setting?.value || '10', 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 10;
+  } catch (error) {
+    console.warn('[CREATE][LIMIT] Ayar okunamadı, varsayılan 10 kullanılacak:', error.message);
+    return 10;
+  }
+}
+
+function isUserPremium(user) {
+  if (!user) return false;
+  const now = new Date();
+  return !!(
+    user.role === 'superadmin' ||
+    user.offline_enabled ||
+    (user.subscription_is_active && user.subscription_expires_at && new Date(user.subscription_expires_at) > now)
+  );
+}
+
 // 1. Kamp Alanı Ekle
 exports.createCampground = async (req, res) => {
   // Kullanıcı kimliği ve policy logu
@@ -122,6 +144,39 @@ exports.createCampground = async (req, res) => {
     if (parseInt(source_id) === 0 && !owner_id) {
       return res.status(400).json({ error: 'owner_id zorunlu' });
     }
+
+    // Premium olmayan kullanıcılar için kamp alanı ekleme limitini veritabanından uygula.
+    // Client tarafındaki kontrol UX içindir; asıl güvenlik kontrolü burada yapılır.
+    if (parseInt(source_id) === 0) {
+      const User = db.User || require('../models/user');
+      const authenticatedUser = req.user?.id ? await User.findByPk(req.user.id) : null;
+      const effectiveOwnerId = owner_id || req.user?.id;
+      const isOwnerRequest = req.user?.role === 'superadmin' || String(effectiveOwnerId) === String(req.user?.id);
+
+      if (!isOwnerRequest) {
+        return res.status(403).json({ error: 'Başka kullanıcı adına kamp alanı ekleyemezsiniz' });
+      }
+
+      if (!isUserPremium(authenticatedUser)) {
+        const limit = await getNonPremiumCampingAreaLimit();
+        const currentCount = await Campground.count({
+          where: {
+            owner_id: String(effectiveOwnerId),
+            source_id: '0',
+          }
+        });
+
+        if (currentCount >= limit) {
+          return res.status(403).json({
+            error: 'Kamp alanı ekleme limitine ulaştınız',
+            code: 'NON_PREMIUM_CAMPGROUND_LIMIT_REACHED',
+            limit,
+            current_count: currentCount,
+          });
+        }
+      }
+    }
+
     // Dizi/obje olanları string olarak kaydet
     if (facilities && typeof facilities !== 'string') facilities = JSON.stringify(facilities);
     if (accessibility && typeof accessibility !== 'string') accessibility = JSON.stringify(accessibility);

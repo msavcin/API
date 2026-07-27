@@ -5,6 +5,55 @@
 
 const db = require('../models');
 
+const PUBLIC_APP_SETTING_DEFAULTS = {
+  non_premium_camping_area_limit: '10',
+  app_latest_version: '',
+  app_min_supported_version: '',
+  app_update_required: 'false',
+  app_update_message: 'Kamp Defterim\'in yeni bir sürümü hazır. Daha iyi performans ve yeni özellikler için güncelleyin.',
+  app_update_android_url: 'https://play.google.com/store/apps/details?id=com.spondylus.boltexponativewind',
+  app_update_ios_url: 'https://apps.apple.com/tr/app/kamp-defterim/id6759046939?l=tr',
+};
+
+/**
+ * GET /node/admin/app-config
+ * Mobil uygulamanın herkese açık/oturumlu çalışma ayarlarını getirir.
+ * Hassas admin ayarları dönmez; sadece client'ın runtime'da ihtiyaç duyduğu değerler.
+ */
+exports.getAppConfig = async (req, res) => {
+  try {
+    const keys = Object.keys(PUBLIC_APP_SETTING_DEFAULTS);
+    const settings = await db.AppSetting.findAll({
+      where: { key: keys },
+      attributes: ['key', 'value']
+    });
+
+    const map = { ...PUBLIC_APP_SETTING_DEFAULTS };
+    settings.forEach((setting) => {
+      map[setting.key] = setting.value;
+    });
+
+    const nonPremiumLimit = parseInt(map.non_premium_camping_area_limit || '10', 10);
+
+    res.json({
+      settings: {
+        non_premium_camping_area_limit: Number.isFinite(nonPremiumLimit) && nonPremiumLimit >= 0
+          ? nonPremiumLimit
+          : 10,
+        app_latest_version: map.app_latest_version || '',
+        app_min_supported_version: map.app_min_supported_version || '',
+        app_update_required: map.app_update_required === 'true' || map.app_update_required === '1',
+        app_update_message: map.app_update_message || PUBLIC_APP_SETTING_DEFAULTS.app_update_message,
+        app_update_android_url: map.app_update_android_url || PUBLIC_APP_SETTING_DEFAULTS.app_update_android_url,
+        app_update_ios_url: map.app_update_ios_url || PUBLIC_APP_SETTING_DEFAULTS.app_update_ios_url,
+      }
+    });
+  } catch (error) {
+    console.error('App config getirme hatası:', error);
+    res.status(500).json({ error: 'Uygulama ayarları getirilemedi' });
+  }
+};
+
 /**
  * GET /node/admin/settings
  * Tüm admin ayarlarını getirir (sadece superadmin)

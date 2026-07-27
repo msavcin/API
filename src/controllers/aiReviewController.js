@@ -101,40 +101,367 @@ async function checkDailyLimit() {
   }
 }
 
+const GENERIC_AI_REVIEW_PATTERNS = [
+  /detayl[ıi]\s+bilgi\s+i[cç]in\s+google\s+places/i,
+  /bu\s+kamp\s+alan[ıi]\s+hakk[ıi]nda(?:\s+google\s+places\s+(?:üzerinde|[üu]zerinde))?\s+[\w\s]+\s+kullan[ıi]c[ıi]\s+yorumu\s+bulunmaktad[ıi]r/i,
+  /google\s+places\s+(?:üzerinde|[üu]zerinde|['’]te).*kullan[ıi]c[ıi]\s+yorumu\s+bulunmaktad[ıi]r/i,
+];
+
+const REVIEW_POSITIVE_WORDS = [
+  'güzel', 'guzel', 'harika', 'mükemmel', 'mukemmel', 'iyi', 'temiz', 'sakin',
+  'huzurlu', 'ilgili', 'yardımcı', 'yardimci', 'beğendik', 'begendik', 'memnun',
+  'tavsiye', 'öneririm', 'oneririm', 'uygun', 'ferah', 'keyifli', 'rahat', 'başarılı', 'basarili'
+];
+
+const REVIEW_NEGATIVE_WORDS = [
+  'kötü', 'kotu', 'pis', 'kirli', 'pahalı', 'pahali', 'kalabalık', 'kalabalik',
+  'gürültü', 'gurultu', 'yetersiz', 'sorun', 'problem', 'bozuk', 'ilgisiz',
+  'zor', 'eksik', 'çöp', 'cop', 'rahatsız', 'rahatsiz', 'şikayet', 'sikayet',
+  'beğenmedik', 'begenmedik', 'berbat', 'rezalet'
+];
+
+const REVIEW_TOPIC_RULES = [
+  {
+    key: 'location',
+    label: 'konum ve ulaşım',
+    keywords: ['konum', 'lokasyon', 'ulaşım', 'ulasim', 'yol', 'yakın', 'yakin', 'merkez'],
+    pro: 'Konum, yakınlık veya ulaşım yorumlarda olumlu öne çıkıyor.',
+    con: 'Konum, yol veya ulaşım tarafında dikkat edilmesi gereken yorumlar var.',
+    mixed: 'Konum ve ulaşım konusunda hem memnuniyet hem de dikkat edilmesi gereken deneyimler aktarılmış.',
+  },
+  {
+    key: 'cleanliness',
+    label: 'temizlik ve hijyen',
+    keywords: ['temiz', 'temizlik', 'hijyen', 'pis', 'kirli', 'çöp', 'cop'],
+    pro: 'Temizlik ve düzen konusunda olumlu geri bildirimler bulunuyor.',
+    con: 'Temizlik, hijyen veya çevre düzeniyle ilgili olumsuz geri bildirimler var.',
+    mixed: 'Temizlik ve hijyen algısı yorumlara göre değişiyor; bazı kullanıcılar memnunken bazıları bakım beklentisini vurgulamış.',
+  },
+  {
+    key: 'facilities',
+    label: 'tesis olanakları',
+    keywords: ['tuvalet', 'wc', 'duş', 'dus', 'banyo', 'elektrik', 'su', 'tesis', 'olanak', 'imkan', 'imkân'],
+    pro: 'Tuvalet, duş, su/elektrik gibi tesis olanakları bazı yorumlarda artı olarak belirtiliyor.',
+    con: 'Tuvalet, duş, su/elektrik veya tesis altyapısı konusunda eksiklerden söz ediliyor.',
+    mixed: 'Tesis olanakları konusunda yorumlar karışık; bazı kullanıcılar imkanları yeterli bulurken bazıları altyapı ve bakım tarafında eksik belirtmiş.',
+  },
+  {
+    key: 'staff',
+    label: 'işletme ve personel',
+    keywords: ['personel', 'işletme', 'isletme', 'çalışan', 'calisan', 'sahip', 'ilgi', 'ilgili', 'yardımcı', 'yardimci'],
+    pro: 'İşletme veya personel ilgisi olumlu yorumlanan başlıklar arasında.',
+    con: 'İşletme/personel iletişimi veya hizmet yaklaşımıyla ilgili olumsuz deneyimler aktarılmış.',
+    mixed: 'İşletme ve personel deneyimi yorumlarda tek yönlü değil; olumlu iletişim kadar bazı olumsuz temaslar da aktarılmış.',
+  },
+  {
+    key: 'atmosphere',
+    label: 'sakinlik ve atmosfer',
+    keywords: ['sakin', 'sessiz', 'huzur', 'huzurlu', 'kalabalık', 'kalabalik', 'gürültü', 'gurultu', 'müzik', 'muzik'],
+    pro: 'Sakinlik ve huzurlu atmosfer olumlu yön olarak öne çıkıyor.',
+    con: 'Kalabalık, gürültü veya sakinlik beklentisiyle ilgili uyarılar var.',
+    mixed: 'Atmosfer ve sakinlik beklentisi kullanıcıya göre değişiyor; bazı yorumlar huzuru, bazıları kalabalık/gürültü ihtimalini vurguluyor.',
+  },
+  {
+    key: 'price',
+    label: 'fiyat ve performans',
+    keywords: ['fiyat', 'ücret', 'ucret', 'pahalı', 'pahali', 'ucuz', 'uygun', 'performans'],
+    pro: 'Fiyat/performans algısı bazı yorumlarda olumlu değerlendiriliyor.',
+    con: 'Fiyat, ücret veya alınan hizmetin karşılığı konusunda eleştiriler var.',
+    mixed: 'Fiyat/performans algısı yorumlarda karışık; bazı kullanıcılar makul bulurken bazıları ücret-hizmet dengesini sorgulamış.',
+  },
+  {
+    key: 'nature',
+    label: 'doğal çevre ve manzara',
+    keywords: ['manzara', 'deniz', 'sahil', 'plaj', 'göl', 'gol', 'orman', 'doğa', 'doga', 'çevre', 'cevre'],
+    pro: 'Doğal çevre, manzara veya deniz/sahil yakınlığı olumlu şekilde anılıyor.',
+    con: 'Çevre koşulları, doğal alan kullanımı veya bakım konusunda olumsuz notlar var.',
+    mixed: 'Doğal çevre ve manzara güçlü bir unsur olsa da çevre bakımı konusunda farklı deneyimler aktarılmış.',
+  },
+  {
+    key: 'safety_family',
+    label: 'güvenlik ve aile uygunluğu',
+    keywords: ['güvenli', 'guvenli', 'güvenlik', 'guvenlik', 'aile', 'çocuk', 'cocuk'],
+    pro: 'Güvenlik veya aileye uygunluk açısından olumlu yorumlar bulunuyor.',
+    con: 'Güvenlik, aile/çocuk uygunluğu veya alan düzeniyle ilgili çekinceler belirtilmiş.',
+    mixed: 'Güvenlik ve aile uygunluğu konusunda yorumlar sınırlı veya karışık; beklentiye göre önceden bilgi almak faydalı olabilir.',
+  },
+];
+
+function normalizeReviewText(value) {
+  return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+}
+
+function hasAnyWord(text, words) {
+  return words.some((word) => text.includes(word));
+}
+
+function uniqueNonEmpty(items, limit = 5) {
+  const seen = new Set();
+  const result = [];
+  for (const item of items) {
+    const clean = normalizeReviewText(item);
+    if (!clean) continue;
+    const key = clean.toLocaleLowerCase('tr-TR');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(clean);
+    if (result.length >= limit) break;
+  }
+  return result;
+}
+
+function isGenericAIReviewText(text) {
+  const raw = normalizeReviewText(text);
+  if (!raw) return true;
+
+  const hasProsCons = /(?:^|\n|\b)\s*(Artılar|Avantajlar)\s*:/i.test(text || '') &&
+    /(?:^|\n|\b)\s*(Eksiler|Dezavantajlar)\s*:/i.test(text || '');
+  const isGeneric = GENERIC_AI_REVIEW_PATTERNS.some((pattern) => pattern.test(raw));
+
+  return isGeneric || !hasProsCons;
+}
+
+function resolveReviewTopics(topicScores) {
+  const pros = [];
+  const cons = [];
+  const mixed = [];
+
+  topicScores.forEach((topic) => {
+    const pro = topic.pro || 0;
+    const con = topic.con || 0;
+    if (pro <= 0 && con <= 0) return;
+
+    // Aynı başlığı hem artıya hem eksiye yazma. Dengeli/karışık durumları
+    // madde listesine değil değerlendirme paragrafına taşı.
+    if (pro > 0 && con > 0) {
+      if (pro >= con + 2) {
+        pros.push(topic.rule.pro);
+      } else if (con >= pro + 2) {
+        cons.push(topic.rule.con);
+      } else {
+        mixed.push(topic.rule.mixed || `${topic.rule.label || 'Bazı başlıklar'} için yorumlar karışık; deneyim kullanıcı beklentisine göre değişebilir.`);
+      }
+      return;
+    }
+
+    if (pro > 0) pros.push(topic.rule.pro);
+    if (con > 0) cons.push(topic.rule.con);
+  });
+
+  return {
+    pros: uniqueNonEmpty(pros, 5),
+    cons: uniqueNonEmpty(cons, 5),
+    mixed: uniqueNonEmpty(mixed, 3),
+  };
+}
+
+function buildNarrativeReview(campgroundName, totalReviewCount, averageRating, pros, cons, mixed, commentCount) {
+  const areaName = campgroundName || 'Bu kamp alanı';
+  const countLabel = totalReviewCount > 0 ? `${totalReviewCount} yorum` : 'mevcut yorumlar';
+  const ratingSentence = typeof averageRating === 'number'
+    ? ` İncelenen yorumlarda puan ortalaması yaklaşık ${averageRating.toFixed(1)}/5 seviyesinde.`
+    : '';
+
+  const positiveSentence = pros.length > 0
+    ? ` Olumlu tarafta ${pros.slice(0, 3).map((item) => item.replace(/\.$/, '').toLocaleLowerCase('tr-TR')).join(', ')} gibi noktalar öne çıkıyor.`
+    : ' Olumlu yönler yorumlarda belirgin bir başlık altında yoğunlaşmıyor.';
+
+  const cautionSentence = cons.length > 0
+    ? ` Dikkat edilmesi gereken taraflarda ise ${cons.slice(0, 3).map((item) => item.replace(/\.$/, '').toLocaleLowerCase('tr-TR')).join(', ')} başlıkları görülüyor.`
+    : ' Tekrar eden güçlü bir olumsuz başlık öne çıkmadığı için genel izlenim daha dengeli görünüyor.';
+
+  const mixedSentence = mixed.length > 0
+    ? ` Bazı konularda yorumlar karışık: ${mixed.map((item) => item.replace(/\.$/, '').toLocaleLowerCase('tr-TR')).join('; ')}. Bu nedenle bu başlıklar artı/eksi listelerinde tekrar edilmeden genel değerlendirmede tutuldu.`
+    : '';
+
+  const firstParagraph = `${areaName} için kullanıcı yorumları incelendiğinde ${countLabel} içinde kamp deneyimini etkileyen başlıklar daha çok konfor, hizmet, çevre koşulları ve beklenti yönetimi etrafında toplanıyor.${ratingSentence}${positiveSentence}`;
+  const secondParagraph = `${cautionSentence}${mixedSentence ? ` ${mixedSentence}` : ''} Bu nedenle alanı değerlendiren kampçıların, özellikle kendi önceliklerine göre yorumlardaki bu ayrımları dikkate alması faydalı olur.`;
+  const thirdParagraph = commentCount > 0
+    ? `Genel tablo, kısa ziyaret veya konaklama planlayan kullanıcılar için güçlü yanların yanında kontrol edilmesi gereken birkaç pratik nokta olduğunu gösteriyor.`
+    : `Ayrıntılı yorum metni sınırlı olduğu için değerlendirme temkinli tutulmuştur.`;
+
+  return [firstParagraph, secondParagraph, thirdParagraph].join('\n\n');
+}
+
+function parseAIReviewBullets(text) {
+  const raw = typeof text === 'string' ? text : '';
+  const prosMatch = raw.match(/(?:Artılar|Avantajlar)\s*:\s*([\s\S]*?)(?=(?:\n\s*(?:Eksiler|Dezavantajlar)\s*:)|$)/i);
+  const consMatch = raw.match(/(?:Eksiler|Dezavantajlar)\s*:\s*([\s\S]*?)(?=(?:\n\s*(?:Not|Sonuç)\s*:)|$)/i);
+  const parseBullets = (block) => !block ? [] : block
+    .split(/\r?\n/)
+    .map((line) => normalizeReviewText(line).replace(/^[\-\*•\s\d\.]+/, '').trim())
+    .filter(Boolean);
+
+  return {
+    pros: parseBullets(prosMatch?.[1]),
+    cons: parseBullets(consMatch?.[1]),
+  };
+}
+
+function getBulletTopicKeys(bullet) {
+  const lower = normalizeReviewText(bullet).toLocaleLowerCase('tr-TR');
+  return REVIEW_TOPIC_RULES
+    .map((rule, index) => ({ key: rule.key || rule.label || String(index), rule }))
+    .filter(({ rule }) => hasAnyWord(lower, rule.keywords))
+    .map(({ key }) => key);
+}
+
+function hasContradictoryProsCons(text) {
+  const { pros, cons } = parseAIReviewBullets(text);
+  if (pros.length === 0 || cons.length === 0) return false;
+
+  const proTopics = new Set(pros.flatMap(getBulletTopicKeys));
+  const conTopics = new Set(cons.flatMap(getBulletTopicKeys));
+  return [...proTopics].some((topic) => conTopics.has(topic));
+}
+
+function buildRuleBasedReviewEvaluation(campgroundName, totalReviewCount = 0, reviews = []) {
+  const normalizedReviews = (Array.isArray(reviews) ? reviews : [])
+    .map((review) => {
+      const text = normalizeReviewText(review?.text || review?.comment || review?.review_text || '');
+      const rating = review?.rating != null ? Number(review.rating) : null;
+      return {
+        text,
+        rating: rating != null && Number.isFinite(rating) ? rating : null,
+      };
+    })
+    .filter((review) => review.text || review.rating != null);
+
+  const commentReviews = normalizedReviews.filter((review) => review.text);
+  const ratedReviews = normalizedReviews.filter((review) => review.rating != null);
+  const averageRating = ratedReviews.length > 0
+    ? ratedReviews.reduce((sum, review) => sum + Number(review.rating), 0) / ratedReviews.length
+    : null;
+
+  const topicScores = REVIEW_TOPIC_RULES.map((rule) => ({ rule, pro: 0, con: 0 }));
+  let positiveGeneral = 0;
+  let negativeGeneral = 0;
+
+  commentReviews.forEach((review) => {
+    const text = review.text.toLocaleLowerCase('tr-TR');
+    const explicitPositive = hasAnyWord(text, REVIEW_POSITIVE_WORDS);
+    const explicitNegative = hasAnyWord(text, REVIEW_NEGATIVE_WORDS);
+    const positive = (typeof review.rating === 'number' && review.rating >= 4) || explicitPositive;
+    const negative = (typeof review.rating === 'number' && review.rating <= 2) || explicitNegative;
+
+    let matchedTopic = false;
+    topicScores.forEach((topic) => {
+      if (!hasAnyWord(text, topic.rule.keywords)) return;
+      matchedTopic = true;
+      if (positive) topic.pro += 1;
+      if (negative) topic.con += 1;
+    });
+
+    if (!matchedTopic) {
+      if (positive) positiveGeneral += 1;
+      if (negative) negativeGeneral += 1;
+    }
+  });
+
+  const resolved = resolveReviewTopics(topicScores);
+  const pros = [...resolved.pros];
+  const cons = [...resolved.cons];
+  const mixed = [...resolved.mixed];
+
+  if (positiveGeneral > 0) {
+    pros.push('Yorumların bir bölümünde genel memnuniyet ve tavsiye etme eğilimi görülüyor.');
+  }
+  if (negativeGeneral > 0) {
+    cons.push('Bazı yorumlarda genel memnuniyetsizlik veya beklentinin karşılanmaması dikkat çekiyor.');
+  }
+
+  if (pros.length === 0) {
+    if (typeof averageRating === 'number' && averageRating >= 4) {
+      pros.push('Genel puan ortalaması olumlu görünüyor; kullanıcı deneyimi ağırlıklı olarak memnuniyet yönünde.');
+    } else if (commentReviews.length > 0) {
+      pros.push('Yorumlarda belirgin bir olumlu tema ayrışmıyor; kullanıcı yorumları arttıkça tablo netleşecektir.');
+    } else {
+      pros.push('Olumlu yönleri güvenilir biçimde çıkarmak için yeterli yorum metni bulunmuyor.');
+    }
+  }
+
+  if (cons.length === 0) {
+    if (typeof averageRating === 'number' && averageRating < 3.5) {
+      cons.push('Genel puan ortalaması karışık; yorum metinleri arttıkça olumsuz başlıklar daha net ayrışacaktır.');
+    } else if (commentReviews.length > 0) {
+      cons.push('Yorumlarda tekrar eden belirgin bir olumsuz başlık öne çıkmıyor.');
+    } else {
+      cons.push('Olumsuz yönleri güvenilir biçimde çıkarmak için yeterli yorum metni bulunmuyor.');
+    }
+  }
+
+  const finalPros = uniqueNonEmpty(pros, 5);
+  const finalCons = uniqueNonEmpty(cons, 5);
+  const narrative = buildNarrativeReview(
+    campgroundName,
+    totalReviewCount,
+    averageRating,
+    finalPros,
+    finalCons,
+    mixed,
+    commentReviews.length,
+  );
+
+  return [
+    narrative,
+    '',
+    'Artılar:',
+    ...finalPros.map((item) => `- ${item}`),
+    '',
+    'Eksiler:',
+    ...finalCons.map((item) => `- ${item}`),
+    '',
+    `Not: Bu değerlendirme kullanıcı yorum metinlerinden otomatik olarak oluşturulmuştur${commentReviews.length > 0 ? ` (${commentReviews.length} yorum metni analiz edildi)` : ''}.`,
+  ].join('\n');
+}
+
 /**
  * Helper: AI ile kamp alanı yorumlarını değerlendir
  */
-async function evaluateWithAI(campgroundName, location, reviewSummary, totalReviewCount, sampleReviewCount) {
+async function evaluateWithAI(campgroundName, location, reviewSummary, totalReviewCount, sampleReviewCount, reviews = []) {
+  const fallbackEvaluation = () => buildRuleBasedReviewEvaluation(
+    campgroundName,
+    totalReviewCount,
+    reviews
+  );
+
   try {
     const ai = AIAdapterFactory.create(AI_PROVIDER);
     
-    const systemPrompt = `Sen uzman bir kamp danışmanısın. Görevin, Google Places yorumlarını analiz ederek kampçılar için samimi ve bilgilendirici değerlendirmeler yazmak.
+    const systemPrompt = `Sen uzman bir kamp danışmanısın. Görevin, sana verilen kullanıcı yorum metinlerini analiz ederek kampçılar için dengeli ve kullanışlı bir değerlendirme yazmak.
 
-Değerlendirmen şunları içermeli:
-- Genel izlenim ve atmosfer
-- Temizlik ve bakım durumu
-- Personel ve hizmet kalitesi
-- Olanaklar ve imkanlar
-- Avantajlar ve dezavantajlar
-- Hangi tip kampçılar için uygun olduğu
+Kesin kurallar:
+- Önce 2-3 paragraflık yorum/değerlendirme yaz; sadece madde listesi üretme.
+- Sadece toplam yorum sayısını söyleyen veya kullanıcıyı Google Places'e yönlendiren metin yazma.
+- Şu cümleyi veya benzerini asla kullanma: "Bu kamp alanı hakkında Google Places üzerinde ... kullanıcı yorumu bulunmaktadır. Detaylı bilgi için Google Places'i ziyaret edebilirsiniz."
+- Değerlendirme, yorumların içeriğinden çıkarılmış olumlu ve olumsuz yönleri belirtmeli.
+- Örnek yorum sayısını açıkça yazma; sadece içerik analizine odaklan.
+- Aynı başlığı hem Artılar hem Eksiler altında tekrarlama. Örneğin tesis/tuvalet, personel veya sakinlik aynı anda iki listede yer almasın.
+- Bir başlık hem olumlu hem olumsuz yorumlanıyorsa bunu ana değerlendirme paragrafında dengeli anlat; Artılar/Eksiler listesinde sadece baskın tarafı göster veya hiç madde yapma.
+- Eğer olumsuz yön azsa bunu "tekrar eden belirgin bir olumsuz başlık öne çıkmıyor" şeklinde belirt.
 
-ÖNEMLİ: Sana verilen yorumlar Google Places'teki tüm yorumların sadece bir örneğidir. Toplam yorum sayısı ile senin analiz ettiğin örnek yorum sayısı farklı olabilir. Değerlendirmende YALNIZCA TOPLAM YORUM SAYISINI kullan ve kesinlikle örnek yorum sayısını belirtme.
+Çıktıyı sadece şu formatta üret:
+2-3 paragraflık değerlendirme metni.
 
-2-3 paragrafta, Türkçe, samimi ve bilgilendirici bir dille yaz.`;
+Artılar:
+- En fazla 5 kısa ve birbirinden farklı madde
 
-    const reviewCountInfo = totalReviewCount > 0 
-      ? `\n**TOPLAM YORUM SAYISI:** ${totalReviewCount} yorum (Aşağıda ${sampleReviewCount} örnek yorum gösterilmektedir)`
+Eksiler:
+- En fazla 5 kısa ve Artılar ile çelişmeyen madde
+
+Not: Bu değerlendirme kullanıcı yorum metinlerinden otomatik olarak oluşturulmuştur.`;
+
+    const reviewCountInfo = totalReviewCount > 0
+      ? `\nToplam kullanıcı yorumu: ${totalReviewCount}`
       : '';
 
-    const userPrompt = `Aşağıdaki kamp alanı hakkında Google Places yorumlarını analiz et:
+    const userPrompt = `Kamp alanı: ${campgroundName}
+Konum: ${location}${reviewCountInfo}
 
-**Kamp Alanı:** ${campgroundName}
-**Konum:** ${location}${reviewCountInfo}
-
-**Örnek Yorumlar:**
+Analiz edilecek yorum metinleri:
 ${reviewSummary}
 
-Lütfen değerlendirmeni yaz. UNUTMA: Bu kamp alanı hakkında TOPLAM ${totalReviewCount} yorum bulunmaktadır. Değerlendirmende bu sayıyı kullan.`;
+Yorum metinlerinden olumlu ve olumsuz yönleri çıkar. Google Places'e yönlendirme yapma.`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -144,17 +471,22 @@ Lütfen değerlendirmeni yaz. UNUTMA: Bu kamp alanı hakkında TOPLAM ${totalRev
     const response = await ai.chat(messages, {
       temperature: AI_REVIEW_TEMPERATURE,
       maxTokens: AI_REVIEW_MAX_TOKENS,
-      timeoutMs: 45000 // 45 saniye timeout
+      timeoutMs: 45000
     });
 
-    return response.trim();
+    const aiEvaluation = typeof response === 'string' ? response.trim() : '';
+
+    if (isGenericAIReviewText(aiEvaluation) || hasContradictoryProsCons(aiEvaluation)) {
+      console.warn('AI değerlendirme generic/çelişkili formatta döndü, yorum tabanlı fallback kullanılacak.');
+      return fallbackEvaluation();
+    }
+
+    return aiEvaluation;
   } catch (error) {
     console.error('AI değerlendirme hatası:', error.message);
-    // Fallback: basit özet - totalReviewCount kullan
-    const reviewInfo = totalReviewCount > 0 
-      ? `${totalReviewCount} kullanıcı yorumu`
-      : 'henüz yorum';
-    return `Bu kamp alanı hakkında Google Places üzerinde ${reviewInfo} bulunmaktadır. Detaylı bilgi için Google Places'i ziyaret edebilirsiniz.`;
+    // AI servisi çalışmasa bile kullanıcıya Google Places sayım metni değil,
+    // yorumların içeriğinden çıkarılmış artı/eksi değerlendirme döndür.
+    return fallbackEvaluation();
   }
 }
 
@@ -327,6 +659,8 @@ exports.evaluateCampgroundReview = async (req, res) => {
               'reviews', 'rating', 'user_ratings_total', 'website',
               'formatted_phone_number', 'price_level', 'types'
             ],
+            language: 'tr',
+            reviews_sort: 'most_relevant',
             key: process.env.GOOGLE_PLACES_API_KEY
           }
         });
@@ -362,6 +696,8 @@ exports.evaluateCampgroundReview = async (req, res) => {
                 'reviews', 'rating', 'user_ratings_total', 'website',
                 'formatted_phone_number', 'price_level', 'types'
               ],
+              language: 'tr',
+              reviews_sort: 'most_relevant',
               key: process.env.GOOGLE_PLACES_API_KEY
             }
           });
@@ -383,7 +719,7 @@ exports.evaluateCampgroundReview = async (req, res) => {
     const totalReviewCount = placeDetails.user_ratings_total || 0;
     const sampleReviewCount = placeDetails.reviews?.length || 0;
     
-    let reviewSummary = 'Bu kamp alanı için Google Places üzerinde henüz yorum bulunmuyor.';
+    let reviewSummary = 'Analiz edilecek ayrıntılı yorum metni bulunmuyor.';
     
     if (placeDetails.reviews && placeDetails.reviews.length > 0) {
       reviewSummary = placeDetails.reviews
@@ -397,7 +733,8 @@ exports.evaluateCampgroundReview = async (req, res) => {
       campground.formatted_address || `${campground.latitude}, ${campground.longitude}`,
       reviewSummary,
       totalReviewCount,
-      sampleReviewCount
+      sampleReviewCount,
+      placeDetails.reviews || []
     );
 
     // Veritabanını güncelle
@@ -675,6 +1012,8 @@ exports.getGooglePlaceDetails = async (req, res) => {
           'user_ratings_total', 'reviews', 'photos', 'website',
           'formatted_phone_number', 'opening_hours', 'types'
         ],
+        language: 'tr',
+        reviews_sort: 'most_relevant',
         key: process.env.GOOGLE_PLACES_API_KEY
       }
     });

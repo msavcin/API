@@ -97,7 +97,14 @@ class LlamaCppProvider {
 class GroqProvider {
   constructor() {
     this.apiKey = process.env.GROQ_API_KEY;
-    this.model = process.env.GROQ_MODEL || 'qwen/qwen3-32b';
+    // qwen/qwen3-32b bazı hesaplarda/model havuzlarında erişilemez olabiliyor.
+    // Bu yüzden varsayılanı daha yaygın bir modele çekiyor ve model_not_found durumunda
+    // GROQ_FALLBACK_MODELS listesindeki modellere otomatik geçiyoruz.
+    this.model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    this.fallbackModels = (process.env.GROQ_FALLBACK_MODELS || 'llama-3.3-70b-versatile,openai/gpt-oss-20b,llama-3.1-8b-instant')
+      .split(',')
+      .map((model) => model.trim())
+      .filter(Boolean);
     this.webSearch = process.env.GROQ_WEB_SEARCH === 'true';
     this.reasoning = process.env.GROQ_REASONING !== 'false'; // Varsayılan: aktif
     // Free tier: 6000 TPM — ~800 input + 2500 output = 3300/istek
@@ -111,15 +118,28 @@ class GroqProvider {
     return match ? Math.ceil(parseFloat(match[1]) * 1000) : null;
   }
 
-  async chat(messages, options = {}) {
-    if (!this.apiKey) {
-      throw new Error('GROQ_API_KEY tanımlı değil');
+  _isModelUnavailable(status, errorText) {
+    const text = errorText || '';
+
+    // 404: model yok / erişim yok.
+    if (status === 404 && /model_not_found|does not exist|do not have access/i.test(text)) {
+      return true;
     }
 
-    // Web arama etkinse compound-beta modeline geç
-    const model = this.webSearch ? 'compound-beta' : this.model;
-    const isReasoningModel = model.includes('qwen3') || model.includes('gpt-oss');
+    // 403: model proje seviyesinde kapalı. Bu durumda sıradaki fallback modele geç.
+    if (status === 403 && /model_permission_blocked_project|permissions_error|blocked at the project level/i.test(text)) {
+      return true;
+    }
 
+    return false;
+  }
+
+  _isReasoningModel(model) {
+    return model.includes('qwen3') || model.includes('gpt-oss');
+  }
+
+  _buildBody(model, messages, options = {}) {
+    const isReasoningModel = this._isReasoningModel(model);
     const body = {
       model,
       messages,
@@ -129,57 +149,94 @@ class GroqProvider {
     };
 
     // JSON modu — Groq response_format ile model seviyesinde JSON zorunlu kılar
-    // qwen3 <think> blokları baskılanır, tüm tokenler JSON'a ayrılır
+    // qwen3/gpt-oss reasoning çıktıları JSON akışını bozmasın diye reasoning kapatılır.
     if (options.jsonMode) {
       body.response_format = { type: 'json_object' };
     }
 
-    // Reasoning modeli ise düşünme modunu etkinleştir
-    // jsonMode veya noReasoning aktifse reasoning kapatılır
+    // Reasoning modeli ise düşünme modunu etkinleştir.
+    // jsonMode veya noReasoning aktifse reasoning kapatılır.
     if (isReasoningModel && this.reasoning && !options.noReasoning && !options.jsonMode) {
       body.reasoning_format = 'parsed';
       body.reasoning_effort = 'default';
     }
 
-    const doRequest = () => fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(options.timeoutMs ?? 60000),
-    });
+    return body;
+  }
 
-    let response = await doRequest();
+  async chat(messages, options = {}) {
+    if (!this.apiKey) {
+      throw new Error('GROQ_API_KEY tanımlı değil');
+    }
 
-    // 429: rate limit — bir kez bekle ve tekrar dene
-    if (response.status === 429) {
-      const errText = await response.text();
-      const waitMs = this._parseRetryAfter(errText);
-      if (waitMs && waitMs <= this.maxRetryWaitMs) {
-        console.warn(`[GROQ] Rate limit — ${waitMs}ms beklenip tekrar deneniyor...`);
-        await new Promise(r => setTimeout(r, waitMs));
-        response = await doRequest();
-      } else {
-        throw new Error(`Groq API hatasi (429): ${errText}`);
+    // Web arama etkinse compound-beta modeline geç; burada fallback yapma.
+    const requestedModel = this.webSearch ? 'compound-beta' : this.model;
+    const candidateModels = this.webSearch
+      ? [requestedModel]
+      : Array.from(new Set([requestedModel, ...this.fallbackModels]));
+
+    let lastErrorText = '';
+    let lastStatus = 0;
+
+    for (let index = 0; index < candidateModels.length; index++) {
+      const model = candidateModels[index];
+      const body = this._buildBody(model, messages, options);
+
+      const doRequest = () => fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(options.timeoutMs ?? 60000),
+      });
+
+      let response = await doRequest();
+
+      // 429: rate limit — bir kez bekle ve tekrar dene
+      if (response.status === 429) {
+        const errText = await response.text();
+        const waitMs = this._parseRetryAfter(errText);
+        if (waitMs && waitMs <= this.maxRetryWaitMs) {
+          console.warn(`[GROQ] Rate limit — ${waitMs}ms beklenip tekrar deneniyor...`);
+          await new Promise(r => setTimeout(r, waitMs));
+          response = await doRequest();
+        } else {
+          throw new Error(`Groq API hatasi (429): ${errText}`);
+        }
       }
+
+      if (!response.ok) {
+        const text = await response.text();
+        lastErrorText = text;
+        lastStatus = response.status;
+
+        if (this._isModelUnavailable(response.status, text) && index < candidateModels.length - 1) {
+          const nextModel = candidateModels[index + 1];
+          console.warn(`[GROQ] Model kullanılamıyor (${model}, HTTP ${response.status}), fallback deneniyor: ${nextModel}`);
+          continue;
+        }
+
+        throw new Error(`Groq API hatası (${response.status}, model=${model}): ${text}`);
+      }
+
+      const data = await response.json();
+      const msg = data.choices?.[0]?.message;
+
+      // Reasoning varsa loglayalım (debug amaçlı)
+      if (msg?.reasoning) {
+        console.log(`[GROQ] Düşünme süreci: ${msg.reasoning.slice(0, 200)}...`);
+      }
+
+      if (model !== requestedModel) {
+        console.warn(`[GROQ] Yanıt fallback model ile alındı: ${model}`);
+      }
+
+      return msg?.content ?? '';
     }
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Groq API hatası (${response.status}): ${text}`);
-    }
-
-    const data = await response.json();
-    const msg = data.choices?.[0]?.message;
-
-    // Reasoning varsa loglayalım (debug amaçlı)
-    if (msg?.reasoning) {
-      console.log(`[GROQ] Düşünme süreci: ${msg.reasoning.slice(0, 200)}...`);
-    }
-
-    return msg?.content ?? '';
+    throw new Error(`Groq API hatası (${lastStatus}): ${lastErrorText || 'Uygun Groq modeli bulunamadı'}`);
   }
 }
 
