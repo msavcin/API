@@ -14,8 +14,14 @@ const googleMapsClient = new Client({});
 
 // AI provider seçimi (.env dosyasından)
 const AI_PROVIDER = process.env.AI_PROVIDER || 'ollama';
-const AI_REVIEW_TEMPERATURE = parseFloat(process.env.AI_REVIEW_TEMPERATURE || '0.7');
-const AI_REVIEW_MAX_TOKENS = parseInt(process.env.AI_REVIEW_MAX_TOKENS || '2000', 10);
+const AI_REVIEW_TEMPERATURE = parseFloat(process.env.AI_REVIEW_TEMPERATURE || '0.35');
+const AI_REVIEW_MAX_TOKENS = parseInt(process.env.AI_REVIEW_MAX_TOKENS || '900', 10);
+// Groq ücretsiz/on_demand kotasında toplu değerlendirmelerde hızlıca rate-limit oluşuyor.
+// Varsayılan olarak yorum metinlerinden kural tabanlı güvenli değerlendirme üretiyoruz.
+// LLM kullanmak istenirse .env: AI_REVIEW_USE_LLM=true yapılabilir.
+const AI_REVIEW_USE_LLM = process.env.AI_REVIEW_USE_LLM === 'true';
+const AI_REVIEW_LLM_FOR_BATCH = process.env.AI_REVIEW_LLM_FOR_BATCH === 'true';
+const AI_REVIEW_MAX_REVIEW_CHARS = parseInt(process.env.AI_REVIEW_MAX_REVIEW_CHARS || '1800', 10);
 
 /**
  * Helper: booking_url'den Google Place ID parse et
@@ -415,15 +421,43 @@ function buildRuleBasedReviewEvaluation(campgroundName, totalReviewCount = 0, re
   ].join('\n');
 }
 
+function compactReviewsForAI(reviews = [], fallbackSummary = '') {
+  const lines = [];
+  const sourceReviews = Array.isArray(reviews) ? reviews : [];
+  for (let i = 0; i < sourceReviews.length; i += 1) {
+    const review = sourceReviews[i] || {};
+    const text = normalizeReviewText(review.text || review.comment || review.review_text || '');
+    if (!text) continue;
+    lines.push(`[Yorum ${lines.length + 1}] ${review.rating || '-'} / 5: ${text}`);
+    if (lines.join('\n\n').length >= AI_REVIEW_MAX_REVIEW_CHARS) break;
+  }
+
+  const joined = lines.join('\n\n').slice(0, AI_REVIEW_MAX_REVIEW_CHARS);
+  return joined || String(fallbackSummary || '').slice(0, AI_REVIEW_MAX_REVIEW_CHARS);
+}
+
 /**
  * Helper: AI ile kamp alanı yorumlarını değerlendir
  */
-async function evaluateWithAI(campgroundName, location, reviewSummary, totalReviewCount, sampleReviewCount, reviews = []) {
+async function evaluateWithAI(campgroundName, location, reviewSummary, totalReviewCount, sampleReviewCount, reviews = [], options = {}) {
   const fallbackEvaluation = () => buildRuleBasedReviewEvaluation(
     campgroundName,
     totalReviewCount,
     reviews
   );
+
+  const useLLM = options.useLLM === true;
+  const hasReviewText = Array.isArray(reviews) && reviews.some((review) => normalizeReviewText(review?.text || review?.comment || review?.review_text || '').length > 0);
+
+  if (!useLLM) {
+    console.log('[AIReview] LLM kapalı; yorum tabanlı kural değerlendirmesi kullanılacak:', campgroundName);
+    return fallbackEvaluation();
+  }
+
+  if (!hasReviewText) {
+    console.log('[AIReview] Yorum metni yok; LLM çağrılmadan fallback kullanılacak:', campgroundName);
+    return fallbackEvaluation();
+  }
 
   try {
     const ai = AIAdapterFactory.create(AI_PROVIDER);
@@ -455,11 +489,12 @@ Not: Bu değerlendirme kullanıcı yorum metinlerinden otomatik olarak oluşturu
       ? `\nToplam kullanıcı yorumu: ${totalReviewCount}`
       : '';
 
+    const compactReviewSummary = compactReviewsForAI(reviews, reviewSummary);
     const userPrompt = `Kamp alanı: ${campgroundName}
 Konum: ${location}${reviewCountInfo}
 
 Analiz edilecek yorum metinleri:
-${reviewSummary}
+${compactReviewSummary}
 
 Yorum metinlerinden olumlu ve olumsuz yönleri çıkar. Google Places'e yönlendirme yapma.`;
 
@@ -477,13 +512,13 @@ Yorum metinlerinden olumlu ve olumsuz yönleri çıkar. Google Places'e yönlend
     const aiEvaluation = typeof response === 'string' ? response.trim() : '';
 
     if (isGenericAIReviewText(aiEvaluation) || hasContradictoryProsCons(aiEvaluation)) {
-      console.warn('AI değerlendirme generic/çelişkili formatta döndü, yorum tabanlı fallback kullanılacak.');
+      console.log('[AIReview] LLM çıktısı generic/çelişkili; yorum tabanlı fallback kullanılacak.');
       return fallbackEvaluation();
     }
 
     return aiEvaluation;
   } catch (error) {
-    console.error('AI değerlendirme hatası:', error.message);
+    console.warn('[AIReview] LLM çağrısı başarısız, fallback kullanılacak:', error.message);
     // AI servisi çalışmasa bile kullanıcıya Google Places sayım metni değil,
     // yorumların içeriğinden çıkarılmış artı/eksi değerlendirme döndür.
     return fallbackEvaluation();
@@ -585,7 +620,7 @@ exports.getTodayCount = async (req, res) => {
  */
 exports.evaluateCampgroundReview = async (req, res) => {
   try {
-    const { campground_id, force } = req.body;
+    const { campground_id, force, use_llm } = req.body;
 
     if (!campground_id) {
       return res.status(400).json({ error: 'campground_id gerekli' });
@@ -734,7 +769,8 @@ exports.evaluateCampgroundReview = async (req, res) => {
       reviewSummary,
       totalReviewCount,
       sampleReviewCount,
-      placeDetails.reviews || []
+      placeDetails.reviews || [],
+      { useLLM: use_llm === true || AI_REVIEW_USE_LLM }
     );
 
     // Veritabanını güncelle
@@ -746,9 +782,9 @@ exports.evaluateCampgroundReview = async (req, res) => {
       updated_at: new Date().toISOString()
     };
 
-    // Google'dan alınan diğer bilgileri güncelle
-    if (placeDetails.rating) updateData.rating = placeDetails.rating;
-    if (placeDetails.user_ratings_total) updateData.review_count = placeDetails.user_ratings_total;
+    // Google'dan alınan diğer bilgileri google_* sütunlarına yaz (KD rating ve review_count'a dokunma)
+    if (typeof placeDetails.rating === 'number') updateData.google_rating = placeDetails.rating;
+    if (typeof placeDetails.user_ratings_total === 'number') updateData.google_review_count = placeDetails.user_ratings_total;
     if (placeDetails.website) updateData.website = placeDetails.website;
     if (placeDetails.formatted_phone_number) updateData.phone = placeDetails.formatted_phone_number;
     if (placeDetails.price_level) {
@@ -778,7 +814,7 @@ exports.batchEvaluate = async (req, res) => {
       return res.status(403).json({ error: 'Yetkisiz erişim' });
     }
 
-    const { limit, force } = req.body;
+    const { limit, force, use_llm } = req.body;
 
     // Günlük limit kontrolü
     const limitCheck = await checkDailyLimit();
@@ -818,7 +854,15 @@ exports.batchEvaluate = async (req, res) => {
     for (const campground of eligibleCampgrounds) {
       try {
         // Her alan için değerlendirme yap
-        const evalReq = { body: { campground_id: campground.id, force }, user: req.user };
+        const evalReq = {
+          body: {
+            campground_id: campground.id,
+            force,
+            // Toplu işlemde LLM varsayılan kapalı; kota/TPM hatalarını önler.
+            use_llm: use_llm === true || AI_REVIEW_LLM_FOR_BATCH,
+          },
+          user: req.user,
+        };
         const evalRes = {
           status: (code) => ({ json: (data) => ({ code, data }) }),
           json: (data) => ({ code: 200, data })
@@ -869,7 +913,7 @@ exports.getCampgroundAiReview = async (req, res) => {
         id,
         ai_review_evaluation: { [Op.ne]: null }
       },
-      attributes: ['id', 'ai_review_evaluation', 'ai_review_generated_at', 'google_place_id']
+      attributes: ['id', 'ai_review_evaluation', 'ai_review_generated_at', 'google_place_id', 'google_rating', 'google_review_count', 'last_google_sync_at']
     });
 
     if (!campground) {
@@ -881,7 +925,10 @@ exports.getCampgroundAiReview = async (req, res) => {
         campground_id: campground.id,
         ai_review_evaluation: campground.ai_review_evaluation,
         ai_review_generated_at: campground.ai_review_generated_at,
-        google_place_id: campground.google_place_id
+        google_place_id: campground.google_place_id,
+        google_rating: campground.google_rating,
+        google_review_count: campground.google_review_count,
+        last_google_sync_at: campground.last_google_sync_at
       }
     });
   } catch (error) {

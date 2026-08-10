@@ -1,17 +1,43 @@
 const db = require('../models');
 const Campground = db.Campground || require('../models/campground');
-const { Op } = require('sequelize');
+const { Op, QueryTypes } = require('sequelize');
 const enrichmentService = require('../services/campgroundEnrichmentService');
 
-async function getNonPremiumCampingAreaLimit() {
+async function getNonPremiumCampingAreaLimit(userId) {
+  try {
+    const rows = await db.sequelize.query(
+      `SELECT * FROM feature_entitlements
+       WHERE feature_key = 'camping_area_limit'
+         AND (user_id IS NULL OR user_id = :userId)
+         AND (starts_at IS NULL OR starts_at <= NOW())
+         AND (expires_at IS NULL OR expires_at > NOW())
+       ORDER BY user_id NULLS FIRST`,
+      { replacements: { userId }, type: QueryTypes.SELECT }
+    );
+    const selected = rows.find((row) => row.user_id != null) || rows.find((row) => row.user_id == null);
+    if (selected) {
+      const enabled = selected.enabled === true || selected.enabled === 'true';
+      const parsed = parseInt(String(selected.limit_value ?? '10'), 10);
+      return {
+        enabled,
+        limit: Number.isFinite(parsed) && parsed >= 0 ? parsed : 10,
+      };
+    }
+  } catch (error) {
+    console.warn('[CREATE][LIMIT] feature_entitlements okunamadı, app_settings deneniyor:', error.message);
+  }
+
   try {
     const AppSetting = db.AppSetting || require('../models/appSetting');
     const setting = await AppSetting.findByPk('non_premium_camping_area_limit');
     const parsed = parseInt(setting?.value || '10', 10);
-    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 10;
+    return {
+      enabled: true,
+      limit: Number.isFinite(parsed) && parsed >= 0 ? parsed : 10,
+    };
   } catch (error) {
     console.warn('[CREATE][LIMIT] Ayar okunamadı, varsayılan 10 kullanılacak:', error.message);
-    return 10;
+    return { enabled: true, limit: 10 };
   }
 }
 
@@ -158,21 +184,23 @@ exports.createCampground = async (req, res) => {
       }
 
       if (!isUserPremium(authenticatedUser)) {
-        const limit = await getNonPremiumCampingAreaLimit();
-        const currentCount = await Campground.count({
-          where: {
-            owner_id: String(effectiveOwnerId),
-            source_id: '0',
-          }
-        });
-
-        if (currentCount >= limit) {
-          return res.status(403).json({
-            error: 'Kamp alanı ekleme limitine ulaştınız',
-            code: 'NON_PREMIUM_CAMPGROUND_LIMIT_REACHED',
-            limit,
-            current_count: currentCount,
+        const limitConfig = await getNonPremiumCampingAreaLimit(effectiveOwnerId);
+        if (limitConfig.enabled) {
+          const currentCount = await Campground.count({
+            where: {
+              owner_id: String(effectiveOwnerId),
+              source_id: '0',
+            }
           });
+
+          if (currentCount >= limitConfig.limit) {
+            return res.status(403).json({
+              error: 'Kamp alanı ekleme limitine ulaştınız',
+              code: 'NON_PREMIUM_CAMPGROUND_LIMIT_REACHED',
+              limit: limitConfig.limit,
+              current_count: currentCount,
+            });
+          }
         }
       }
     }
@@ -344,9 +372,14 @@ exports.listCampgrounds = async (req, res) => {
     const campgroundsWithOwner = campgrounds.map(cg => {
       const ownerId = Number(cg.owner_id);
       const ownerUsername = ownerMap[ownerId] || null;
+      const json = cg.toJSON();
       return {
-        ...cg.toJSON(),
-        owner_username: ownerUsername
+        ...json,
+        owner_username: ownerUsername,
+        google_rating: json.google_rating ?? null,
+        google_review_count: json.google_review_count ?? null,
+        google_place_id: json.google_place_id ?? null,
+        last_google_sync_at: json.last_google_sync_at ?? null,
       };
     });
 
@@ -364,7 +397,12 @@ exports.getCampground = async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const campground = await Campground.findByPk(id);
     if (!campground) return res.status(404).json({ error: 'Kamp alanı bulunamadı' });
-    res.json(campground);
+    const json = campground.toJSON();
+    json.google_rating = json.google_rating ?? null;
+    json.google_review_count = json.google_review_count ?? null;
+    json.google_place_id = json.google_place_id ?? null;
+    json.last_google_sync_at = json.last_google_sync_at ?? null;
+    res.json(json);
   } catch (err) {
     res.status(500).json({ error: 'Kamp alanı getirilemedi', detail: err.message });
   }

@@ -111,11 +111,19 @@ class GroqProvider {
     this.maxTokens = parseInt(process.env.GROQ_MAX_TOKENS ?? '2500', 10);
     // 429 alininca beklenecek max sure (ms) — controller timeout'tan kucuk olmali
     this.maxRetryWaitMs = parseInt(process.env.GROQ_RETRY_WAIT_MS ?? '55000', 10);
+    this.maxRetries = parseInt(process.env.GROQ_MAX_RETRIES ?? '3', 10);
   }
 
   _parseRetryAfter(errorText) {
-    const match = errorText.match(/try again in ([\d.]+)s/);
-    return match ? Math.ceil(parseFloat(match[1]) * 1000) : null;
+    const text = String(errorText || '');
+    // Groq hata mesajları "try again in 2.62s" veya "try again in 255ms" olabilir.
+    const match = text.match(/try again in ([\d.]+)\s*(ms|s)/i);
+    if (!match) return null;
+    const value = parseFloat(match[1]);
+    if (!Number.isFinite(value)) return null;
+    return match[2].toLowerCase() === 'ms'
+      ? Math.ceil(value)
+      : Math.ceil(value * 1000);
   }
 
   _isModelUnavailable(status, errorText) {
@@ -192,23 +200,29 @@ class GroqProvider {
         signal: AbortSignal.timeout(options.timeoutMs ?? 60000),
       });
 
-      let response = await doRequest();
+      let response = null;
+      let rateLimitText = '';
+      for (let retry = 0; retry <= this.maxRetries; retry += 1) {
+        response = await doRequest();
+        if (response.status !== 429) break;
 
-      // 429: rate limit — bir kez bekle ve tekrar dene
-      if (response.status === 429) {
-        const errText = await response.text();
-        const waitMs = this._parseRetryAfter(errText);
-        if (waitMs && waitMs <= this.maxRetryWaitMs) {
-          console.warn(`[GROQ] Rate limit — ${waitMs}ms beklenip tekrar deneniyor...`);
-          await new Promise(r => setTimeout(r, waitMs));
-          response = await doRequest();
-        } else {
-          throw new Error(`Groq API hatasi (429): ${errText}`);
+        rateLimitText = await response.text();
+        const waitMsRaw = this._parseRetryAfter(rateLimitText);
+        // Küçük jitter + minimum bekleme, aynı milisaniyede tekrar çarpışmayı azaltır.
+        const waitMs = waitMsRaw != null
+          ? Math.min(this.maxRetryWaitMs, Math.max(350, waitMsRaw + 250 + Math.round(Math.random() * 250)))
+          : Math.min(this.maxRetryWaitMs, 1000 * Math.pow(2, retry));
+
+        if (retry >= this.maxRetries || waitMs > this.maxRetryWaitMs) {
+          throw new Error(`Groq API hatası (429, model=${model}): ${rateLimitText}`);
         }
+
+        console.warn(`[GROQ] Rate limit — ${waitMs}ms beklenip tekrar deneniyor... (${retry + 1}/${this.maxRetries})`);
+        await new Promise(r => setTimeout(r, waitMs));
       }
 
       if (!response.ok) {
-        const text = await response.text();
+        const text = response.status === 429 ? rateLimitText : await response.text();
         lastErrorText = text;
         lastStatus = response.status;
 

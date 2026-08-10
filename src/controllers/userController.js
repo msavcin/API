@@ -157,17 +157,20 @@ exports.login = async (req, res) => {
     user = await User.findOne({ where: { email } });
   }
   if (!user) return res.status(400).json({ error: 'Kullanıcı bulunamadı' });
-  // trial_user ise ve 30 günü geçtiyse otomatik guest yap ve forceLogout flag'i hazırla
+  // trial_user ise deneme süresi dolduğunda otomatik guest yap.
+  // Yeni sistemde trial_expires_at önceliklidir; eski kayıtlarda created_at + 30 gün fallback olarak kullanılır.
   let forceLogout = false;
   const createdDate = user.createdAt || user.created_at;
   if (user.role === 'user' && user.trial_user && createdDate) {
     const now = new Date();
     const created = new Date(createdDate);
-    const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-    if (diffDays > 30) {
-      await user.update({ role: 'guest', offline_enabled: false });
+    const fallbackExpires = new Date(created.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const trialExpires = user.trial_expires_at ? new Date(user.trial_expires_at) : fallbackExpires;
+    if (trialExpires < now) {
+      await user.update({ role: 'guest', offline_enabled: false, trial_user: false });
       user.role = 'guest';
       user.offline_enabled = false;
+      user.trial_user = false;
       forceLogout = true;
     }
   }
@@ -235,8 +238,23 @@ exports.getMe = async (req, res) => {
     }
     console.log('getMe yanıtı avatar_url:', user.avatar_url);
 
-    // Gerçek zamanlı abonelik süre kontrolü — DB'yi de güncelle
+    // Gerçek zamanlı deneme/abonelik süre kontrolü — DB'yi de güncelle
     const now = new Date();
+    if (user.role === 'user' && user.trial_user) {
+      const createdDate = user.createdAt || user.created_at;
+      const fallbackExpires = createdDate
+        ? new Date(new Date(createdDate).getTime() + 30 * 24 * 60 * 60 * 1000)
+        : null;
+      const trialExpires = user.trial_expires_at ? new Date(user.trial_expires_at) : fallbackExpires;
+      if (trialExpires && trialExpires < now) {
+        await user.update({ role: 'guest', offline_enabled: false, trial_user: false });
+        user.role = 'guest';
+        user.offline_enabled = false;
+        user.trial_user = false;
+        console.log('[getMe] Deneme süresi dolan kullanıcı guest yapıldı:', userId);
+      }
+    }
+
     const isExpired = user.subscription_is_active &&
       user.subscription_expires_at &&
       user.subscription_expires_at < now;
@@ -261,6 +279,8 @@ exports.getMe = async (req, res) => {
       role: user.role === 'superadmin' ? 'superadmin' : (member ? member.role : user.role),
       avatar_url: user.avatar_url || null,
       trial_user: user.trial_user,
+      trial_started_at: user.trial_started_at || null,
+      trial_expires_at: user.trial_expires_at || null,
       offline_enabled: isPremium,
       offline_radius_km: user.offline_radius_km || 20,
       isPremium,

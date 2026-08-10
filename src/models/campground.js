@@ -18,6 +18,8 @@ const Campground = db.sequelize.define('Campground', {
   status: { type: DataTypes.STRING, defaultValue: 'active' },
   rating: { type: DataTypes.FLOAT, defaultValue: 0.0 },
   review_count: { type: DataTypes.INTEGER, defaultValue: 0 },
+  google_rating: { type: DataTypes.FLOAT, allowNull: true },
+  google_review_count: { type: DataTypes.INTEGER, allowNull: true },
   price_range: { type: DataTypes.STRING },
   facilities: { type: DataTypes.TEXT, defaultValue: '[]' },
   accessibility: { type: DataTypes.TEXT, defaultValue: '[]' },

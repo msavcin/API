@@ -67,6 +67,9 @@ app.use('/node/camping-areas', bodyParser.json(), aiReviewRoutes);
 app.use('/node/campgrounds', bodyParser.json(), aiReviewRoutes); // geriye uyumluluk
 // Admin Settings routes
 app.use('/node/admin', bodyParser.json(), require('./routes/adminSettings'));
+// Feature entitlement routes
+app.use('/node/feature-entitlements', bodyParser.json(), require('./routes/featureEntitlements'));
+
 
 // Sunucuyu başlat
 const PORT = process.env.PORT || 3000;

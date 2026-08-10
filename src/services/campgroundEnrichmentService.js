@@ -153,6 +153,14 @@ function _buildEnrichmentPatch(existing, candidate) {
   if (shouldOverwrite('rating')) patch.rating = Number(candidate.rating);
   if (shouldOverwrite('review_count')) patch.review_count = Number(candidate.review_count);
 
+  // Google kaynaklı puan/veri varsa özel google_* alanlarına da yaz
+  if (candidate.google_rating !== undefined && candidate.google_rating !== null) {
+    patch.google_rating = Number(candidate.google_rating);
+  }
+  if (candidate.google_review_count !== undefined && candidate.google_review_count !== null) {
+    patch.google_review_count = Number(candidate.google_review_count);
+  }
+
   if (candidate.social_media) {
     const merged = _mergeSocialMedia(existing.social_media, candidate.social_media);
     if (merged && Object.keys(merged).length) patch.social_media = JSON.stringify(merged);
@@ -262,8 +270,8 @@ async function fetchGooglePlaceDetails({ name, latitude, longitude }) {
       website: place.website || null,
       booking_url: place.url || place.website || null,
       phone: _normalizePhone(place.formatted_phone_number || place.international_phone_number),
-      rating: place.rating ? parseFloat(place.rating) : null,
-      review_count: place.user_ratings_total || null,
+      google_rating: place.rating ? parseFloat(place.rating) : null,
+      google_review_count: place.user_ratings_total || null,
       opening_hours: place.opening_hours?.weekday_text ? JSON.stringify(place.opening_hours.weekday_text) : null,
       description: place.formatted_address || null,
       social_media: socialMedia,
