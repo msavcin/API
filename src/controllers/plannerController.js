@@ -41,10 +41,12 @@ const {
   CampgroundDetailModule,
   BookingUrlModule,
   WebResearchModule,
+  AIOverviewModule,
 } = require('../services/promptBuilder');
 const { getCache, computeHash } = require('../services/cache');
 const { getRouteInfo } = require('../services/routeService');
 const { researchLocation } = require('../services/webResearchService');
+const { fetchGoogleAIOverview } = require('../services/googleAIOverviewService');
 
 const CACHE_TTL = parseInt(process.env.AI_EVAL_CACHE_TTL_SEC ?? '3600', 10);
 const AI_PROVIDER = process.env.AI_PROVIDER || 'ollama';
@@ -54,6 +56,21 @@ const HYBRID_PROVIDERS = {
   preview: process.env.PREVIEW_PROVIDER || 'groq',   // Groq/qwen3 → hızlı
   final:   process.env.FINAL_PROVIDER   || 'deepseek', // DeepSeek → detaylı
 };
+
+// Optional time-based provider overrides (UTC hours). If both START and END are set,
+// code will switch providers during the configured window. Leave empty to disable.
+const AI_PEAK_START_UTC = Number.parseInt(process.env.AI_PEAK_START_UTC ?? '', 10);
+const AI_PEAK_END_UTC = Number.parseInt(process.env.AI_PEAK_END_UTC ?? '', 10);
+
+function isPeakNow() {
+  if (!Number.isFinite(AI_PEAK_START_UTC) || !Number.isFinite(AI_PEAK_END_UTC)) return false;
+  const hour = new Date().getUTCHours(); // UTC-based scheduling
+  if (AI_PEAK_START_UTC <= AI_PEAK_END_UTC) {
+    return hour >= AI_PEAK_START_UTC && hour < AI_PEAK_END_UTC;
+  }
+  // wrap-around (ör. 22 -> 04)
+  return hour >= AI_PEAK_START_UTC || hour < AI_PEAK_END_UTC;
+}
 
 // ---------------------------------------------------------------------------
 // Veri yardımcıları
@@ -510,13 +527,20 @@ exports.aiEvaluate = async (req, res) => {
       console.log(`[PLANNER] Kamp alanı DB'den yüklendi: ${dbCampground.name} (external_id: ${campingArea?.external_id})`);
     }
 
-    // Faz 2: Paralel dış HTTP istekleri — booking_url sayfası + web araştırması
-    const [bookingUrlContent, webResearch] = await Promise.all([
+    // Faz 2: Paralel dış HTTP istekleri — booking_url sayfası + web araştırması + Google AI Overview
+    const [bookingUrlContent, webResearch, aiOverview] = await Promise.all([
       fetchBookingUrlContent(enrichedCampingArea?.booking_url),
       researchLocation({ name: enrichedCampingArea?.name, lat: campLat, lng: campLng }),
+      fetchGoogleAIOverview(
+        enrichedCampingArea?.name || campingArea?.name || 'Kamp Alanı',
+        enrichedCampingArea?.formatted_address || `${campLat}, ${campLng}`
+      ),
     ]);
     if (webResearch?.osmTags || webResearch?.googlePlaces) {
       console.log(`[PLANNER] Web araştırması tamamlandı — OSM: ${!!webResearch.osmTags}, Google: ${!!webResearch.googlePlaces}`);
+    }
+    if (aiOverview?.aiOverview) {
+      console.log(`[PLANNER] Google AI Overview alındı (${aiOverview.aiOverview.length} karakter)`);
     }
 
     // Frontend'den gelen duyuruları DB sonuçlarıyla birleştir (id ile deduplicate)
@@ -564,6 +588,7 @@ exports.aiEvaluate = async (req, res) => {
       routeInfo,
       bookingUrlContent,
       webResearch: (webResearch?.osmTags || webResearch?.googlePlaces) ? webResearch : undefined,
+      aiOverview: (aiOverview?.aiOverview || aiOverview?.relatedQuestions?.length) ? aiOverview : undefined,
     };
 
     // 2. Cache kontrol — key: provider + içerik hash'i (aynı ctx+mode tekrar API'ye gitmez)
@@ -592,7 +617,8 @@ exports.aiEvaluate = async (req, res) => {
         .register(new CampgroundDetailModule())
         .register(new AlternativeLocationModule())
         .register(new BookingUrlModule())
-        .register(new WebResearchModule());
+        .register(new WebResearchModule())
+        .register(new AIOverviewModule());
     } else {
       builder
         .register(new WeatherModule())
@@ -601,15 +627,36 @@ exports.aiEvaluate = async (req, res) => {
         .register(new RouteConditionModule())
         .register(new CampgroundDetailModule())
         .register(new BookingUrlModule())
-        .register(new WebResearchModule());
+        .register(new WebResearchModule())
+        .register(new AIOverviewModule());
     }
 
     // Provider'a göre token bütçesi: DeepSeek → bol token; Groq free tier → 6000 TPM sınırı
     const PROVIDER_TOKEN_CONFIG = {
-      deepseek: { tokenBudget: 8000, maxTokens: 6000 },
+      deepseek: { tokenBudget: 8000, maxTokens: 8000 },
       groq:     { tokenBudget: 2500, maxTokens: 2500 },
     };
-    const activeProvider = HYBRID_PROVIDERS[mode] ?? AI_PROVIDER;
+    // Determine active provider with optional peak/off-peak overrides.
+    let activeProvider = HYBRID_PROVIDERS[mode] ?? AI_PROVIDER;
+    try {
+      const peak = isPeakNow();
+      const previewPeak = process.env.PREVIEW_PROVIDER_PEAK || '';
+      const previewOffpeak = process.env.PREVIEW_PROVIDER_OFFPEAK || '';
+      const finalPeak = process.env.FINAL_PROVIDER_PEAK || '';
+      const finalOffpeak = process.env.FINAL_PROVIDER_OFFPEAK || '';
+
+      if (peak) {
+        if (mode === 'preview' && previewPeak) activeProvider = previewPeak;
+        if (mode === 'final' && finalPeak) activeProvider = finalPeak;
+      } else {
+        if (mode === 'preview' && previewOffpeak) activeProvider = previewOffpeak;
+        if (mode === 'final' && finalOffpeak) activeProvider = finalOffpeak;
+      }
+
+      console.log(`[PLANNER] Peak window: ${peak ? 'YES' : 'NO'} (UTC ${Number.isFinite(AI_PEAK_START_UTC) ? AI_PEAK_START_UTC : '-'}-${Number.isFinite(AI_PEAK_END_UTC) ? AI_PEAK_END_UTC : '-'})`);
+    } catch (err) {
+      console.warn('[PLANNER] Peak provider selection failed, falling back to defaults:', err && err.message ? err.message : err);
+    }
     const tokenCfg = PROVIDER_TOKEN_CONFIG[activeProvider] ?? { tokenBudget: 3500, maxTokens: 4000 };
 
     const { messages, modules } = builder.buildStructured(ctx, { tokenBudget: tokenCfg.tokenBudget });
@@ -649,6 +696,8 @@ exports.aiEvaluate = async (req, res) => {
       if (!structuredData) {
         console.warn('[PLANNER] Structured JSON parse başarısız, kural tabanlı fallback devreye girdi.');
         console.warn('[PLANNER] Ham yanıt (ilk 800 kar.):', String(rawResponse).slice(0, 800));
+        console.warn('[PLANNER] Ham yanıt (son 200 kar.):', String(rawResponse).slice(-200));
+        console.warn('[PLANNER] Toplam yanıt uzunluğu:', String(rawResponse).length, 'karakter');
         evaluation = ruleBased(ctx);
         fallback = true;
       }

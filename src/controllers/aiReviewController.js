@@ -6,6 +6,8 @@
 const { Client } = require('@googlemaps/google-maps-services-js');
 const db = require('../models');
 const { AIAdapterFactory } = require('../services/aiAdapter');
+const { researchLocation } = require('../services/webResearchService');
+const { fetchGoogleAIOverview, formatAIOverviewForPrompt } = require('../services/googleAIOverviewService');
 const Sequelize = require('sequelize');
 const { Op } = Sequelize;
 
@@ -22,6 +24,37 @@ const AI_REVIEW_MAX_TOKENS = parseInt(process.env.AI_REVIEW_MAX_TOKENS || '900',
 const AI_REVIEW_USE_LLM = process.env.AI_REVIEW_USE_LLM === 'true';
 const AI_REVIEW_LLM_FOR_BATCH = process.env.AI_REVIEW_LLM_FOR_BATCH === 'true';
 const AI_REVIEW_MAX_REVIEW_CHARS = parseInt(process.env.AI_REVIEW_MAX_REVIEW_CHARS || '1800', 10);
+// Eğer LLM kapalıysa bile Groq/DeepSeek gibi uzak sağlayıcılarla değerlendirme
+// yapılmasını isterseniz şu env değişkenini kullanın (örnek: "groq,deepseek"):
+// AI_REVIEW_FALLBACK_PROVIDERS=groq,deepseek
+const AI_REVIEW_FALLBACK_PROVIDERS = (process.env.AI_REVIEW_FALLBACK_PROVIDERS || '')
+  .split(',')
+  .map((p) => p.trim())
+  .filter(Boolean);
+
+// Peak window config (UTC hours) — plannerController ile uyumlu env değişkenleri kullanır
+const AI_PEAK_START_UTC = Number.parseInt(process.env.AI_PEAK_START_UTC ?? '', 10);
+const AI_PEAK_END_UTC = Number.parseInt(process.env.AI_PEAK_END_UTC ?? '', 10);
+function isPeakNow() {
+  if (!Number.isFinite(AI_PEAK_START_UTC) || !Number.isFinite(AI_PEAK_END_UTC)) return false;
+  const hour = new Date().getUTCHours();
+  if (AI_PEAK_START_UTC <= AI_PEAK_END_UTC) {
+    return hour >= AI_PEAK_START_UTC && hour < AI_PEAK_END_UTC;
+  }
+  return hour >= AI_PEAK_START_UTC || hour < AI_PEAK_END_UTC;
+}
+
+// Provider override for AI review (optional)
+const AI_REVIEW_PROVIDER_PEAK = process.env.AI_REVIEW_PROVIDER_PEAK || '';
+const AI_REVIEW_PROVIDER_OFFPEAK = process.env.AI_REVIEW_PROVIDER_OFFPEAK || '';
+const AI_REVIEW_FALLBACK_PROVIDERS_PEAK = (process.env.AI_REVIEW_FALLBACK_PROVIDERS_PEAK || '')
+  .split(',')
+  .map((p) => p.trim())
+  .filter(Boolean);
+const AI_REVIEW_FALLBACK_PROVIDERS_OFFPEAK = (process.env.AI_REVIEW_FALLBACK_PROVIDERS_OFFPEAK || '')
+  .split(',')
+  .map((p) => p.trim())
+  .filter(Boolean);
 
 /**
  * Helper: booking_url'den Google Place ID parse et
@@ -220,8 +253,20 @@ function isGenericAIReviewText(text) {
   const raw = normalizeReviewText(text);
   if (!raw) return true;
 
-  const hasProsCons = /(?:^|\n|\b)\s*(Artılar|Avantajlar)\s*:/i.test(text || '') &&
-    /(?:^|\n|\b)\s*(Eksiler|Dezavantajlar)\s*:/i.test(text || '');
+  // Genişletilmiş başlık eşlemeleri (Türkçe + İngilizce yaygın varyantlar)
+  const prosHeaderRegex = /(?:Artılar|Avantajlar|Pros|Advantages|Positives|Olumlu|Güçlü Yönler)/i;
+  const consHeaderRegex = /(?:Eksiler|Dezavantajlar|Cons|Disadvantages|Negatives|Olumsuz|Zayıf Yönler)/i;
+
+  const hasProsConsHeaders = prosHeaderRegex.test(text || '') && consHeaderRegex.test(text || '');
+
+  // Alternatif: Başlık yoksa madde işaretleri ve hem olumlu hem olumsuz kelimelerin varlığı
+  const rawLower = raw.toLocaleLowerCase('tr-TR');
+  const bulletLines = raw.split(/\r?\n/).map((l) => l.trim()).filter((l) => /^[-•\*]\s+/.test(l) || /^\d+\./.test(l));
+  const hasPosWords = REVIEW_POSITIVE_WORDS.some((w) => rawLower.includes(w));
+  const hasNegWords = REVIEW_NEGATIVE_WORDS.some((w) => rawLower.includes(w));
+  const altProsCons = bulletLines.length >= 2 && hasPosWords && hasNegWords;
+
+  const hasProsCons = hasProsConsHeaders || altProsCons;
   const isGeneric = GENERIC_AI_REVIEW_PATTERNS.some((pattern) => pattern.test(raw));
 
   return isGeneric || !hasProsCons;
@@ -291,12 +336,41 @@ function buildNarrativeReview(campgroundName, totalReviewCount, averageRating, p
 
 function parseAIReviewBullets(text) {
   const raw = typeof text === 'string' ? text : '';
-  const prosMatch = raw.match(/(?:Artılar|Avantajlar)\s*:\s*([\s\S]*?)(?=(?:\n\s*(?:Eksiler|Dezavantajlar)\s*:)|$)/i);
-  const consMatch = raw.match(/(?:Eksiler|Dezavantajlar)\s*:\s*([\s\S]*?)(?=(?:\n\s*(?:Not|Sonuç)\s*:)|$)/i);
+
+  // Daha geniş başlık seti: Türkçe ve İngilizce varyantlar
+  const prosHeader = '(?:Artılar|Avantajlar|Pros|Advantages|Positives|Olumlu|Güçlü Yönler)';
+  const consHeader = '(?:Eksiler|Dezavantajlar|Cons|Disadvantages|Negatives|Olumsuz|Zayıf Yönler)';
+
+  const prosMatch = raw.match(new RegExp(`${prosHeader}\s*:\s*([\s\S]*?)(?=(?:\n\s*${consHeader}\s*:)|$)`, 'i'));
+  const consMatch = raw.match(new RegExp(`${consHeader}\s*:\s*([\s\S]*?)(?=(?:\n\s*(?:Not|Sonuç|Conclusion)\s*:)|$)`, 'i'));
+
   const parseBullets = (block) => !block ? [] : block
     .split(/\r?\n/)
     .map((line) => normalizeReviewText(line).replace(/^[\-\*•\s\d\.]+/, '').trim())
     .filter(Boolean);
+
+  // Eğer başlıklar bulunmuyorsa, madde işaretli blokları ayıkla ve içeriğe göre sınıflandır
+  if (!prosMatch?.[1] && !consMatch?.[1]) {
+    const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const pros = [];
+    const cons = [];
+    for (const line of lines) {
+      const clean = line.replace(/^[\-\*•\s\d\.]+/, '').trim();
+      if (!clean) continue;
+      const low = clean.toLocaleLowerCase('tr-TR');
+      const isPos = REVIEW_POSITIVE_WORDS.some((w) => low.includes(w));
+      const isNeg = REVIEW_NEGATIVE_WORDS.some((w) => low.includes(w));
+      if (isPos && !isNeg) pros.push(clean);
+      else if (isNeg && !isPos) cons.push(clean);
+      else {
+        // Eğer karışık görünüyorsa, hem pro hem con adaylarına kat
+        if (isPos) pros.push(clean);
+        if (isNeg) cons.push(clean);
+      }
+    }
+
+    return { pros: uniqueNonEmpty(pros), cons: uniqueNonEmpty(cons) };
+  }
 
   return {
     pros: parseBullets(prosMatch?.[1]),
@@ -313,12 +387,29 @@ function getBulletTopicKeys(bullet) {
 }
 
 function hasContradictoryProsCons(text) {
+  const raw = normalizeReviewText(text);
+  if (!raw) return false;
+
+  // Eğer metinde açıkça 'karışık' / 'dengeli' gibi ifadeler varsa çelişki sayma
+  if (/(karışık|karisik|dengeli|mixed|ambiguous|her iki|both|hem\s+.*\s+hem)/i.test(raw)) return false;
+
   const { pros, cons } = parseAIReviewBullets(text);
   if (pros.length === 0 || cons.length === 0) return false;
 
   const proTopics = new Set(pros.flatMap(getBulletTopicKeys));
   const conTopics = new Set(cons.flatMap(getBulletTopicKeys));
-  return [...proTopics].some((topic) => conTopics.has(topic));
+  const intersection = [...proTopics].filter((t) => conTopics.has(t));
+
+  if (intersection.length === 0) return false;
+
+  // Küçük örtüşmeler toleranslı olsun: örtüşme küçükse çelişki sayma
+  const proCount = proTopics.size || 1;
+  const conCount = conTopics.size || 1;
+  const relativeOverlap = intersection.length / Math.min(proCount, conCount);
+  if (relativeOverlap <= 0.4) return false;
+
+  // Diğer durumlarda çelişkili kabul et
+  return true;
 }
 
 function buildRuleBasedReviewEvaluation(campgroundName, totalReviewCount = 0, reviews = []) {
@@ -421,6 +512,29 @@ function buildRuleBasedReviewEvaluation(campgroundName, totalReviewCount = 0, re
   ].join('\n');
 }
 
+/**
+ * JSON schema for structured AI review output
+ */
+const AI_REVIEW_JSON_SCHEMA = {
+  type: 'object',
+  properties: {
+    summary: { type: 'string', description: '2-3 cümlelik kısa özet değerlendirme' },
+    pros: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'En fazla 5 olumlu özellik',
+      maxItems: 5
+    },
+    cons: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'En fazla 5 olumsuz özellik',
+      maxItems: 5
+    }
+  },
+  required: ['summary', 'pros', 'cons']
+};
+
 function compactReviewsForAI(reviews = [], fallbackSummary = '') {
   const lines = [];
   const sourceReviews = Array.isArray(reviews) ? reviews : [];
@@ -437,7 +551,44 @@ function compactReviewsForAI(reviews = [], fallbackSummary = '') {
 }
 
 /**
+ * Format structured JSON review as readable text
+ */
+function formatStructuredReview(reviewObj) {
+  if (!reviewObj || typeof reviewObj !== 'object') return null;
+  
+  const summary = reviewObj.summary || '';
+  const pros = Array.isArray(reviewObj.pros) ? reviewObj.pros : [];
+  const cons = Array.isArray(reviewObj.cons) ? reviewObj.cons : [];
+  
+  if (!summary && pros.length === 0 && cons.length === 0) return null;
+  
+  const parts = [];
+  if (summary) parts.push(summary);
+  
+  if (pros.length > 0) {
+    parts.push('\n\nArtılar:');
+    pros.forEach(p => parts.push(`- ${p}`));
+  }
+  
+  if (cons.length > 0) {
+    parts.push('\n\nEksiler:');
+    cons.forEach(c => parts.push(`- ${c}`));
+  }
+  
+  parts.push('\n\nNot: Bu değerlendirme kullanıcı yorum metinlerinden otomatik olarak oluşturulmuştur.');
+  
+  return parts.join('\n');
+}
+
+/**
  * Helper: AI ile kamp alanı yorumlarını değerlendir
+ * @param {string} campgroundName
+ * @param {string} location
+ * @param {string} reviewSummary
+ * @param {number} totalReviewCount
+ * @param {number} sampleReviewCount
+ * @param {Array} reviews
+ * @param {object} options - { useLLM, webResearch, bookingUrl }
  */
 async function evaluateWithAI(campgroundName, location, reviewSummary, totalReviewCount, sampleReviewCount, reviews = [], options = {}) {
   const fallbackEvaluation = () => buildRuleBasedReviewEvaluation(
@@ -449,54 +600,263 @@ async function evaluateWithAI(campgroundName, location, reviewSummary, totalRevi
   const useLLM = options.useLLM === true;
   const hasReviewText = Array.isArray(reviews) && reviews.some((review) => normalizeReviewText(review?.text || review?.comment || review?.review_text || '').length > 0);
 
-  if (!useLLM) {
-    console.log('[AIReview] LLM kapalı; yorum tabanlı kural değerlendirmesi kullanılacak:', campgroundName);
-    return fallbackEvaluation();
-  }
+  // Google AI Overview değişkenini önce tanımla (tüm return path'lerde kullanılacak)
+  let aiOverviewData = null;
 
   if (!hasReviewText) {
     console.log('[AIReview] Yorum metni yok; LLM çağrılmadan fallback kullanılacak:', campgroundName);
-    return fallbackEvaluation();
+    return { evaluation: fallbackEvaluation(), aiOverviewData };
   }
 
-  try {
-    const ai = AIAdapterFactory.create(AI_PROVIDER);
-    
-    const systemPrompt = `Sen uzman bir kamp danışmanısın. Görevin, sana verilen kullanıcı yorum metinlerini analiz ederek kampçılar için dengeli ve kullanışlı bir değerlendirme yazmak.
+  // Google AI Overview çek (eğer etkinse)
+  let aiOverviewContext = '';
+  if (process.env.SERPAPI_KEY) {
+    try {
+      console.log(`[AIReview] Google AI Overview çekiliyor: ${campgroundName}`);
+      aiOverviewData = await fetchGoogleAIOverview(campgroundName, location);
+      aiOverviewContext = formatAIOverviewForPrompt(aiOverviewData);
+      if (aiOverviewContext) {
+        console.log(`[AIReview] Google AI Overview eklendi (${aiOverviewContext.length} karakter)`);
+      }
+    } catch (aiErr) {
+      console.warn(`[AIReview] Google AI Overview hatası (devam ediliyor):`, aiErr.message);
+    }
+  }
 
-Kesin kurallar:
-- Önce 2-3 paragraflık yorum/değerlendirme yaz; sadece madde listesi üretme.
-- Sadece toplam yorum sayısını söyleyen veya kullanıcıyı Google Places'e yönlendiren metin yazma.
-- Şu cümleyi veya benzerini asla kullanma: "Bu kamp alanı hakkında Google Places üzerinde ... kullanıcı yorumu bulunmaktadır. Detaylı bilgi için Google Places'i ziyaret edebilirsiniz."
-- Değerlendirme, yorumların içeriğinden çıkarılmış olumlu ve olumsuz yönleri belirtmeli.
-- Örnek yorum sayısını açıkça yazma; sadece içerik analizine odaklan.
-- Aynı başlığı hem Artılar hem Eksiler altında tekrarlama. Örneğin tesis/tuvalet, personel veya sakinlik aynı anda iki listede yer almasın.
-- Bir başlık hem olumlu hem olumsuz yorumlanıyorsa bunu ana değerlendirme paragrafında dengeli anlat; Artılar/Eksiler listesinde sadece baskın tarafı göster veya hiç madde yapma.
-- Eğer olumsuz yön azsa bunu "tekrar eden belirgin bir olumsuz başlık öne çıkmıyor" şeklinde belirt.
+  const peak = isPeakNow();
 
-Çıktıyı sadece şu formatta üret:
-2-3 paragraflık değerlendirme metni.
+  // LLM kapalıysa fallback sağlayıcıları peak/offpeak bazlı seç
+  if (!useLLM) {
+    let fallbackProviders = Array.isArray(AI_REVIEW_FALLBACK_PROVIDERS) ? AI_REVIEW_FALLBACK_PROVIDERS.slice() : [];
+    if (peak && AI_REVIEW_FALLBACK_PROVIDERS_PEAK.length > 0) fallbackProviders = AI_REVIEW_FALLBACK_PROVIDERS_PEAK.slice();
+    else if (!peak && AI_REVIEW_FALLBACK_PROVIDERS_OFFPEAK.length > 0) fallbackProviders = AI_REVIEW_FALLBACK_PROVIDERS_OFFPEAK.slice();
 
-Artılar:
-- En fazla 5 kısa ve birbirinden farklı madde
+    if (!fallbackProviders || fallbackProviders.length === 0) {
+      console.log('[AIReview] LLM kapalı ve fallback sağlayıcı yok; yorum tabanlı kural değerlendirmesi kullanılacak:', campgroundName);
+      return { evaluation: fallbackEvaluation(), aiOverviewData };
+    }
 
-Eksiler:
-- En fazla 5 kısa ve Artılar ile çelişmeyen madde
+    const systemPrompt = `Sen uzman bir kamp danışmanısın. Görevin, sana verilen kullanıcı yorum metinlerini ve ek bilgileri analiz ederek kampçılar için dengeli ve kullanışlı bir değerlendirme yazmak.
 
-Not: Bu değerlendirme kullanıcı yorum metinlerinden otomatik olarak oluşturulmuştur.`;
+KESİN KURALLAR:
+- Yanıtını YALNIZCA geçerli JSON formatında ver
+- JSON şeması: { "summary": string, "pros": string[], "cons": string[] }
+- summary: 2-3 cümlelik kısa, öz değerlendirme (kampın genel karakterini özetle)
+- pros: En fazla 5 kısa, net olumlu özellik (madde başı 10-15 kelime)
+- cons: En fazla 5 kısa, net olumsuz özellik (madde başı 10-15 kelime)
+- Aynı konuyu hem pros hem cons'a yazma (örn: temizlik, personel, konum)
+- Bir konu hem olumlu hem olumsuz ise bunu summary'de dengeli açıkla, listelerde sadece baskın tarafı göster
+- "Yorum 1, Yorum 2" gibi referans kullanma
+- Yorum sayısı veya "Google Places'e bakın" gibi meta bilgi verme
+- Fiyat/para birimi karşılaştırması yapma (hizmet kalitesini doğrudan etkilemiyorsa)
+- Ulusal kimlik/etnik grup karşılaştırması yapma
+- Eğer veri yetersiz/çelişkiliyse bunu summary'de belirt
 
-    const reviewCountInfo = totalReviewCount > 0
-      ? `\nToplam kullanıcı yorumu: ${totalReviewCount}`
-      : '';
+ÖRNEK ÇIKTI:
+{
+  "summary": "Deniz kenarında huzurlu bir kamp alanı. Temizlik ve personel ilgisi öne çıkıyor. Tesis altyapısı temel seviyede.",
+  "pros": [
+    "Denize sıfır konum ve huzurlu atmosfer",
+    "Temiz ve düzenli çevre",
+    "İlgili ve yardımsever personel",
+    "Uygun fiyat/performans dengesi"
+  ],
+  "cons": [
+    "Tuvalet ve duş tesisleri sınırlı",
+    "Elektrik bağlantısı her alanda yok",
+    "Yüksek sezonda kalabalık olabiliyor"
+  ]
+}`;
+
+    // Web research sonuçlarını hazırla (eğer varsa)
+    let webResearchContext = '';
+    if (options.webResearch) {
+      const wr = options.webResearch;
+      const additionalInfo = [];
+      
+      if (wr.googlePlaces?.rating) {
+        additionalInfo.push(`Google Puanı: ${wr.googlePlaces.rating}/5 (${wr.googlePlaces.totalRatings || '?'} değerlendirme)`);
+      }
+      if (wr.googlePlaces?.summary) {
+        additionalInfo.push(`Google Özet: ${wr.googlePlaces.summary}`);
+      }
+      if (wr.osmTags?.description) {
+        additionalInfo.push(`OSM Açıklama: ${wr.osmTags.description}`);
+      }
+      if (wr.osmTags?.openingHours) {
+        additionalInfo.push(`Çalışma Saatleri: ${wr.osmTags.openingHours}`);
+      }
+      
+      const facilities = [];
+      if (wr.osmTags?.shower === 'yes') facilities.push('duş');
+      if (wr.osmTags?.toilets === 'yes') facilities.push('tuvalet');
+      if (wr.osmTags?.electricity === 'yes') facilities.push('elektrik');
+      if (wr.osmTags?.drinkingWater === 'yes') facilities.push('içme suyu');
+      if (facilities.length > 0) {
+        additionalInfo.push(`Tesisler: ${facilities.join(', ')}`);
+      }
+      
+      if (additionalInfo.length > 0) {
+        webResearchContext = `\n\nEk bilgiler (web araştırmasından):\n${additionalInfo.join('\n')}`;
+      }
+    }
 
     const compactReviewSummary = compactReviewsForAI(reviews, reviewSummary);
     const userPrompt = `Kamp alanı: ${campgroundName}
-Konum: ${location}${reviewCountInfo}
+Konum: ${location}${webResearchContext}${aiOverviewContext}
 
-Analiz edilecek yorum metinleri:
+Kullanıcı yorumları (${reviews.length} adet):
 ${compactReviewSummary}
 
-Yorum metinlerinden olumlu ve olumsuz yönleri çıkar. Google Places'e yönlendirme yapma.`;
+Geçerli JSON formatında yanıt ver (schema: { summary, pros, cons }).`;
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ];
+
+    for (const provider of fallbackProviders) {
+      try {
+        console.log(`[AIReview] LLM kapalı; fallback sağlayıcısı denenecek: ${provider} — ${campgroundName}`);
+        const ai = AIAdapterFactory.create(provider);
+        
+        // JSON mode zorunlu (her provider için)
+        const response = await ai.chat(messages, {
+          temperature: AI_REVIEW_TEMPERATURE,
+          maxTokens: AI_REVIEW_MAX_TOKENS,
+          timeoutMs: provider === 'deepseek' ? 90000 : 45000,
+          jsonMode: true,  // JSON format zorunlu
+          noReasoning: true,  // Reasoning content'i devre dışı bırak
+        });
+
+        const aiEvaluation = typeof response === 'string' ? response.trim() : '';
+
+        if (!aiEvaluation) {
+          console.warn(`[AIReview] ${provider} boş yanıt döndürdü, diğer sağlayıcı deneniyor.`);
+          continue;
+        }
+
+        // JSON parse ve validation
+        let reviewObj;
+        try {
+          reviewObj = JSON.parse(aiEvaluation);
+        } catch (parseErr) {
+          console.warn(`[AIReview] ${provider} geçersiz JSON döndürdü:`, parseErr.message);
+          continue;
+        }
+
+        // Validate structure
+        if (!reviewObj.summary || !Array.isArray(reviewObj.pros) || !Array.isArray(reviewObj.cons)) {
+          console.warn(`[AIReview] ${provider} eksik JSON yapısı döndürdü (summary/pros/cons eksik).`);
+          continue;
+        }
+
+        // Generic kontrolü (JSON içeriği üzerinde)
+        if (reviewObj.summary.length < 20 || (reviewObj.pros.length === 0 && reviewObj.cons.length === 0)) {
+          console.warn(`[AIReview] ${provider} çıktısı çok kısa/eksik; fallback deneniyor.`);
+          continue;
+        }
+
+        // Format ve döndür
+        const formatted = formatStructuredReview(reviewObj);
+        if (!formatted) {
+          console.warn(`[AIReview] ${provider} format edilemedi.`);
+          continue;
+        }
+
+        console.log(`[AIReview] ${provider} başarılı JSON yanıtı verdi.`);
+        return formatted;
+      } catch (err) {
+        console.warn(`[AIReview] ${provider} çağrısı başarısız, sonraki provider deneniyor:`, err.message);
+      }
+    }
+
+    console.log('[AIReview] Tüm fallback sağlayıcılar başarısız; yorum tabanlı kural değerlendirmesi kullanılacak:', campgroundName);
+    return fallbackEvaluation();
+  }
+
+  // LLM açık ise varsayılan sağlayıcı ile devam et (peak/offpeak override destekli)
+  try {
+    let activeProvider = AI_PROVIDER;
+    if (peak && AI_REVIEW_PROVIDER_PEAK) activeProvider = AI_REVIEW_PROVIDER_PEAK;
+    else if (!peak && AI_REVIEW_PROVIDER_OFFPEAK) activeProvider = AI_REVIEW_PROVIDER_OFFPEAK;
+
+    console.log(`[AIReview] LLM etkin. Seçilen provider: ${activeProvider} ${peak ? '(PEAK)' : '(OFFPEAK)'} — ${campgroundName}`);
+    const ai = AIAdapterFactory.create(activeProvider);
+    
+    const systemPrompt = `Sen uzman bir kamp danışmanısın. Görevin, sana verilen kullanıcı yorum metinlerini ve ek bilgileri analiz ederek kampçılar için dengeli ve kullanışlı bir değerlendirme yazmak.
+
+KESİN KURALLAR:
+- Yanıtını YALNIZCA geçerli JSON formatında ver
+- JSON şeması: { "summary": string, "pros": string[], "cons": string[] }
+- summary: 2-3 cümlelik kısa, öz değerlendirme (kampın genel karakterini özetle)
+- pros: En fazla 5 kısa, net olumlu özellik (madde başı 10-15 kelime)
+- cons: En fazla 5 kısa, net olumsuz özellik (madde başı 10-15 kelime)
+- Aynı konuyu hem pros hem cons'a yazma (örn: temizlik, personel, konum)
+- Bir konu hem olumlu hem olumsuz ise bunu summary'de dengeli açıkla, listelerde sadece baskın tarafı göster
+- "Yorum 1, Yorum 2" gibi referans kullanma
+- Yorum sayısı veya "Google Places'e bakın" gibi meta bilgi verme
+- Fiyat/para birimi karşılaştırması yapma (hizmet kalitesini doğrudan etkilemiyorsa)
+- Ulusal kimlik/etnik grup karşılaştırması yapma
+- Eğer veri yetersiz/çelişkiliyse bunu summary'de belirt
+
+ÖRNEK ÇIKTI:
+{
+  "summary": "Deniz kenarında huzurlu bir kamp alanı. Temizlik ve personel ilgisi öne çıkıyor. Tesis altyapısı temel seviyede.",
+  "pros": [
+    "Denize sıfır konum ve huzurlu atmosfer",
+    "Temiz ve düzenli çevre",
+    "İlgili ve yardımsever personel",
+    "Uygun fiyat/performans dengesi"
+  ],
+  "cons": [
+    "Tuvalet ve duş tesisleri sınırlı",
+    "Elektrik bağlantısı her alanda yok",
+    "Yüksek sezonda kalabalık olabiliyor"
+  ]
+}`;
+
+    // Web research sonuçlarını hazırla (eğer varsa)
+    let webResearchContext = '';
+    if (options.webResearch) {
+      const wr = options.webResearch;
+      const additionalInfo = [];
+      
+      if (wr.googlePlaces?.rating) {
+        additionalInfo.push(`Google Puanı: ${wr.googlePlaces.rating}/5 (${wr.googlePlaces.totalRatings || '?'} değerlendirme)`);
+      }
+      if (wr.googlePlaces?.summary) {
+        additionalInfo.push(`Google Özet: ${wr.googlePlaces.summary}`);
+      }
+      if (wr.osmTags?.description) {
+        additionalInfo.push(`OSM Açıklama: ${wr.osmTags.description}`);
+      }
+      if (wr.osmTags?.openingHours) {
+        additionalInfo.push(`Çalışma Saatleri: ${wr.osmTags.openingHours}`);
+      }
+      
+      const facilities = [];
+      if (wr.osmTags?.shower === 'yes') facilities.push('duş');
+      if (wr.osmTags?.toilets === 'yes') facilities.push('tuvalet');
+      if (wr.osmTags?.electricity === 'yes') facilities.push('elektrik');
+      if (wr.osmTags?.drinkingWater === 'yes') facilities.push('içme suyu');
+      if (facilities.length > 0) {
+        additionalInfo.push(`Tesisler: ${facilities.join(', ')}`);
+      }
+      
+      if (additionalInfo.length > 0) {
+        webResearchContext = `\n\nEk bilgiler (web araştırmasından):\n${additionalInfo.join('\n')}`;
+      }
+    }
+
+    const compactReviewSummary = compactReviewsForAI(reviews, reviewSummary);
+    const userPrompt = `Kamp alanı: ${campgroundName}
+Konum: ${location}${webResearchContext}${aiOverviewContext}
+
+Kullanıcı yorumları (${reviews.length} adet):
+${compactReviewSummary}
+
+Geçerli JSON formatında yanıt ver (schema: { summary, pros, cons }).`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -506,22 +866,51 @@ Yorum metinlerinden olumlu ve olumsuz yönleri çıkar. Google Places'e yönlend
     const response = await ai.chat(messages, {
       temperature: AI_REVIEW_TEMPERATURE,
       maxTokens: AI_REVIEW_MAX_TOKENS,
-      timeoutMs: 45000
+      timeoutMs: 45000,
+      jsonMode: true,  // JSON format zorunlu
+      noReasoning: true,  // Reasoning content'i devre dışı bırak
     });
 
     const aiEvaluation = typeof response === 'string' ? response.trim() : '';
 
-    if (isGenericAIReviewText(aiEvaluation) || hasContradictoryProsCons(aiEvaluation)) {
-      console.log('[AIReview] LLM çıktısı generic/çelişkili; yorum tabanlı fallback kullanılacak.');
+    if (!aiEvaluation) {
+      console.warn(`[AIReview] ${activeProvider} boş yanıt döndürdü, fallback kullanılacak.`);
       return fallbackEvaluation();
     }
 
-    return aiEvaluation;
+    // JSON parse ve validation
+    let reviewObj;
+    try {
+      reviewObj = JSON.parse(aiEvaluation);
+    } catch (parseErr) {
+      console.warn(`[AIReview] ${activeProvider} geçersiz JSON döndürdü:`, parseErr.message);
+      return fallbackEvaluation();
+    }
+
+    // Validate structure
+    if (!reviewObj.summary || !Array.isArray(reviewObj.pros) || !Array.isArray(reviewObj.cons)) {
+      console.warn(`[AIReview] ${activeProvider} eksik JSON yapısı döndürdü (summary/pros/cons eksik).`);
+      return fallbackEvaluation();
+    }
+
+    // Generic kontrolü (JSON içeriği üzerinde)
+    if (reviewObj.summary.length < 20 || (reviewObj.pros.length === 0 && reviewObj.cons.length === 0)) {
+      console.warn(`[AIReview] ${activeProvider} çıktısı çok kısa/eksik; fallback kullanılacak.`);
+      return fallbackEvaluation();
+    }
+
+    // Format ve döndür
+    const formatted = formatStructuredReview(reviewObj);
+    if (!formatted) {
+      console.warn(`[AIReview] ${activeProvider} format edilemedi.`);
+      return { evaluation: fallbackEvaluation(), aiOverviewData };
+    }
+
+    console.log(`[AIReview] ${activeProvider} başarılı JSON yanıtı verdi.`);
+    return { evaluation: formatted, aiOverviewData };
   } catch (error) {
     console.warn('[AIReview] LLM çağrısı başarısız, fallback kullanılacak:', error.message);
-    // AI servisi çalışmasa bile kullanıcıya Google Places sayım metni değil,
-    // yorumların içeriğinden çıkarılmış artı/eksi değerlendirme döndür.
-    return fallbackEvaluation();
+    return { evaluation: fallbackEvaluation(), aiOverviewData };
   }
 }
 
@@ -762,15 +1151,35 @@ exports.evaluateCampgroundReview = async (req, res) => {
         .join('\n\n');
     }
 
+    // Web research yap (OSM + Google Places ek bilgiler)
+    let webResearch = null;
+    try {
+      if (campground.latitude && campground.longitude) {
+        console.log(`[AIReview] Web research başlatılıyor: ${campground.name}`);
+        webResearch = await researchLocation({
+          name: campground.name,
+          lat: campground.latitude,
+          lng: campground.longitude
+        });
+        console.log(`[AIReview] Web research tamamlandı — OSM: ${!!webResearch?.osmTags}, Google: ${!!webResearch?.googlePlaces}`);
+      }
+    } catch (webErr) {
+      console.warn(`[AIReview] Web research hatası (devam ediliyor):`, webErr.message);
+    }
+
     // AI ile değerlendir
-    const aiEvaluation = await evaluateWithAI(
+    const { evaluation: aiEvaluation, aiOverviewData } = await evaluateWithAI(
       campground.name,
       campground.formatted_address || `${campground.latitude}, ${campground.longitude}`,
       reviewSummary,
       totalReviewCount,
       sampleReviewCount,
       placeDetails.reviews || [],
-      { useLLM: use_llm === true || AI_REVIEW_USE_LLM }
+      { 
+        useLLM: use_llm === true || AI_REVIEW_USE_LLM,
+        webResearch: webResearch,
+        bookingUrl: campground.booking_url
+      }
     );
 
     // Veritabanını güncelle
@@ -795,7 +1204,8 @@ exports.evaluateCampgroundReview = async (req, res) => {
 
     res.json({
       success: true,
-      evaluation: updateData
+      evaluation: updateData,
+      aiOverview: aiOverviewData // SerpAPI'den gelen zengin veriler
     });
 
   } catch (error) {

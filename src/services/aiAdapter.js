@@ -14,7 +14,7 @@ class OllamaProvider {
   async chat(messages, options = {}) {
     const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify({
         model: this.model,
         messages,
@@ -46,7 +46,7 @@ class VLLMProvider {
   async chat(messages, options = {}) {
     const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify({
         model: this.model,
         messages,
@@ -75,7 +75,7 @@ class LlamaCppProvider {
     // llama.cpp server OpenAI uyumlu /v1/chat/completions endpoint'ini destekler
     const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify({
         messages,
         n_predict: options.maxTokens ?? 1024,
@@ -101,7 +101,9 @@ class GroqProvider {
     // Bu yüzden varsayılanı daha yaygın bir modele çekiyor ve model_not_found durumunda
     // GROQ_FALLBACK_MODELS listesindeki modellere otomatik geçiyoruz.
     this.model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
-    this.fallbackModels = (process.env.GROQ_FALLBACK_MODELS || 'llama-3.3-70b-versatile,openai/gpt-oss-20b,llama-3.1-8b-instant')
+    // Llama 3.1 8B Instant (groq: 'llama-3.1-8b-instant') Groq tarafında sonlandırıldığı
+    // için varsayılan fallback listesinden çıkarıldı. Tavsiye edilen ikame: `openai/gpt-oss-20b`.
+    this.fallbackModels = (process.env.GROQ_FALLBACK_MODELS || 'llama-3.3-70b-versatile,openai/gpt-oss-20b')
       .split(',')
       .map((model) => model.trim())
       .filter(Boolean);
@@ -193,7 +195,7 @@ class GroqProvider {
       const doRequest = () => fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
           'Authorization': `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify(body),
@@ -269,7 +271,7 @@ class DeepSeekProvider {
     const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
         'Authorization': `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
@@ -278,6 +280,8 @@ class DeepSeekProvider {
         temperature: options.temperature ?? 0.6,
         top_p: 0.95,
         max_tokens: options.maxTokens ?? 4096,
+        // Reasoning modunu devre dışı bırak (structured JSON için gerekli)
+        ...(options.noReasoning ? { reasoning_effort: 'none' } : {}),
         ...(options.jsonMode ? { response_format: { type: 'json_object' } } : {}),
       }),
       signal: AbortSignal.timeout(options.timeoutMs ?? 90000),
@@ -289,7 +293,44 @@ class DeepSeekProvider {
     }
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content ?? '';
+    
+    // Debug: API yanıt yapısını logla
+    console.log('[DEEPSEEK] API Response yapısı:', {
+      hasChoices: !!data.choices,
+      choicesLength: data.choices?.length,
+      firstChoice: data.choices?.[0] ? {
+        hasMessage: !!data.choices[0].message,
+        messageKeys: data.choices[0].message ? Object.keys(data.choices[0].message) : [],
+        finishReason: data.choices[0].finish_reason,
+        contentLength: data.choices[0].message?.content?.length ?? 0
+      } : null,
+      error: data.error,
+      usage: data.usage
+    });
+    
+    const msg = data.choices?.[0]?.message;
+    const finishReason = data.choices?.[0]?.finish_reason;
+
+    // Prefer `content`, but if empty try `reasoning_content` as fallback (some DeepSeek setups
+    // may place the substantive output in reasoning_content when reasoning is enabled).
+    let content = msg?.content ?? '';
+    if ((!content || content.length === 0) && msg?.reasoning_content) {
+      content = msg.reasoning_content;
+      console.warn('[DEEPSEEK] content boş; reasoning_content fallback olarak kullanılıyor');
+    }
+
+    // Boş yanıt kontrolü
+    if (!content || content.length === 0) {
+      console.error('[DEEPSEEK] BOŞ YANIT! API tam response:', JSON.stringify(data, null, 2).slice(0, 1000));
+    }
+
+    // Token limiti kontrolü
+    if (finishReason === 'length') {
+      console.warn('[DEEPSEEK] Yanıt token limiti nedeniyle kesildi (finish_reason: length)');
+      console.warn('[DEEPSEEK] Yanıt uzunluğu:', content.length, 'karakter');
+    }
+
+    return content;
   }
 }
 

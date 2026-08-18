@@ -64,7 +64,8 @@ async function getUserFromToken(token) {
 // Tile endpoint: /tiles/{z}/{x}/{y}.png
 router.get('/:z/:x/:y.png', async (req, res) => {
   try {
-    const { z, x, y } = req.params;
+    const { z, x } = req.params;
+    let { y } = req.params; // y param may include retina suffix like '@2x'
     const style = req.query.style === 'dark' ? 'dark' : 'voyager';
     const cacheKey = `tile:${style}:${z}:${x}:${y}`;
 
@@ -92,8 +93,6 @@ router.get('/:z/:x/:y.png', async (req, res) => {
         // Radius kontrolü (opsiyonel rate limiting)
         if (user.offline_radius_km < 20) {
           console.warn(`[TILE] User ${user.id} düşük offline radius: ${user.offline_radius_km}km`);
-          // İsterseniz burada daha fazla kısıtlama ekleyebilirsiniz
-          // Örn: Belirli zoom seviyelerini sınırla, günlük tile limiti vb.
         }
         
         console.log(`[TILE] Authenticated user ${user.id} (offline: ${user.offline_enabled}, radius: ${user.offline_radius_km}km)`);
@@ -112,25 +111,42 @@ router.get('/:z/:x/:y.png', async (req, res) => {
       // Cache hatası olsa bile devam et
     }
 
-    // Subdomain seçimi (basit load balancing)
+    // Eğer y param içinde retina suffix (@2x gibi) varsa upstream istekte bunu kaldır
+    const retinaMatch = String(y).match(/@([0-9]+)x$/);
+    const upstreamY = retinaMatch ? String(y).replace(/@([0-9]+)x$/, '') : String(y);
+
+    // Subdomain seçimi (basit load balancing) — upstreamY kullan
     const providers = style === 'dark' ? DARK_TILE_PROVIDERS : TILE_PROVIDERS;
-    const providerIndex = (parseInt(x) + parseInt(y)) % providers.length;
-    const tileUrl = `${providers[providerIndex]}/${z}/${x}/${y}.png`;
+    const initialIndex = ((parseInt(x, 10) || 0) + (parseInt(upstreamY, 10) || 0)) % providers.length;
 
     console.log(`[TILE] REDIS MISS: ${z}/${x}/${y} (style: ${style}) -> Fetching from CartoDB`);
 
-    // CartoDB'den tile çek
-    const response = await axios.get(tileUrl, {
-      headers: {
-        'User-Agent': 'KampDefterim/1.3',
-      },
-      timeout: 10000, // 10 saniye timeout
-      responseType: 'arraybuffer', // Binary data için
-    });
+    // Birden fazla provider dene (fallback)
+    let response = null;
+    const attempted = [];
+    for (let i = 0; i < providers.length; i++) {
+      const idx = (initialIndex + i) % providers.length;
+      const tileUrl = `${providers[idx]}/${z}/${x}/${upstreamY}.png`;
+      attempted.push(tileUrl);
+      try {
+        const r = await axios.get(tileUrl, {
+          headers: { 'User-Agent': 'KampDefterim/1.3' },
+          timeout: 10000,
+          responseType: 'arraybuffer',
+        });
+        if (r && r.status === 200) {
+          response = r;
+          break;
+        }
+        console.warn(`[TILE] Provider ${providers[idx]} returned ${r.status} for ${z}/${x}/${upstreamY}`);
+      } catch (err) {
+        console.warn(`[TILE] Fetch error from ${providers[idx]}: ${err.message}`);
+      }
+    }
 
-    if (response.status !== 200) {
-      console.error(`[TILE] ERROR ${response.status}: ${z}/${x}/${y}`);
-      return res.status(response.status).send('Tile not found');
+    if (!response) {
+      console.error(`[TILE] All providers failed for ${z}/${x}/${upstreamY}: ${attempted.join(', ')}`);
+      return res.status(502).send('Tile not available');
     }
 
     const buffer = Buffer.from(response.data);

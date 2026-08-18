@@ -252,6 +252,11 @@ const handleAiEvaluate = async () => {
 Ollama ile `llama3.1:8b` modeli ilk istekte **10–40 saniye** sürebilir. Önbellek dolduktan sonra aynı plan için yanıt aniden (cached: true) gelir.  
 UI'da kesinlikle **loading spinner + açıklayıcı metin** gösterin: `"AI değerlendirmeniz hazırlanıyor..."`
 
+### Groq modeli - Önemli (güncelleme)
+Groq tarafında "Llama 3.1 8B Instant" (örnek model adı: `llama-3.1-8b-instant`) modeli 16 Ağustos 2026 tarihinde kullanımdan kaldırılmıştır. Sunucuda veya ortam değişkenlerinde bu modele işaret eden `GROQ_MODEL` veya `GROQ_FALLBACK_MODELS` ayarları varsa güncelleyin.
+
+Önerilen ikame model: `openai/gpt-oss-20b` — GroqCloud üzerinde desteklenen ve tavsiye edilen alternatiftir. Hız ve token bütçesi farklılıkları olabileceği için geçiş sonrası entegrasyon testleri yapın.
+
 ### Fallback davranışı
 `"fallback": true` döndüğünde LLM çalışmıyor demektir. Bu durumda `evaluation` alanı kural tabanlı kısa bir metindir. Kullanıcıya gösterimde ayrım yapmak isterseniz `fallback` flag'ini kullanın.
 

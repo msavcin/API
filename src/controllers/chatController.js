@@ -208,7 +208,14 @@ exports.postMessage = async (req, res) => {
     if (!isPremium) return res.status(403).json({ error: 'Bu özellik sadece premium kullanıcılar için.' });
 
     const sequelize = db.sequelize;
+    // Frontend'den gelen geçici "pending_*" ID'lerini ignore et
     let convId = conversation_id;
+    if (convId) {
+      const isInvalid = (typeof convId === 'string' && convId.startsWith('pending_')) || !Number.isInteger(Number(convId));
+      if (isInvalid) {
+        convId = null;
+      }
+    }
     let actualRecipientId = recipient_id || actualRecipientIdInput;
 
     if (!convId) {

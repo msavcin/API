@@ -1,0 +1,486 @@
+{
+  "search_metadata": {
+    "id": "6a7f2e4f8270311eae97b45c",
+    "status": "Success",
+    "json_endpoint": "https://serpapi.com/searches/jpUXJj0Da6r01aW6PxdhyQ/6a7f2e4f8270311eae97b45c.json",
+    "markdown_endpoint": "https://serpapi.com/searches/jpUXJj0Da6r01aW6PxdhyQ/6a7f2e4f8270311eae97b45c.md",
+    "pixel_position_endpoint": "https://serpapi.com/searches/jpUXJj0Da6r01aW6PxdhyQ/6a7f2e4f8270311eae97b45c.json_with_pixel_position",
+    "created_at": "2026-08-14 15:03:43 UTC",
+    "processed_at": "2026-08-14 15:03:43 UTC",
+    "google_url": "https://www.google.com/search?q=Cennet+Dalan+Koyu&oq=Cennet+Dalan+Koyu&hl=tr&gl=tr&sourceid=chrome&ie=UTF-8",
+    "raw_html_file": "https://serpapi.com/searches/jpUXJj0Da6r01aW6PxdhyQ/6a7f2e4f8270311eae97b45c.html",
+    "total_time_taken": 5.53
+  },
+  "search_parameters": {
+    "engine": "google",
+    "q": "Cennet Dalan Koyu",
+    "google_domain": "google.com",
+    "hl": "tr",
+    "gl": "tr",
+    "device": "desktop"
+  },
+  "search_information": {
+    "query_displayed": "Cennet Dalan Koyu",
+    "total_results": 115,
+    "time_taken_displayed": 0.28,
+    "organic_results_state": "Results for exact spelling"
+  },
+  "knowledge_graph": {
+    "title": "Cennet Dalan Koyu",
+    "type": "Otel",
+    "entity_type": "hotels",
+    "kgmid": "/g/1v402503",
+    "knowledge_graph_search_link": "https://www.google.com/search?kgmid=/g/1v402503&hl=tr-TR&q=Cennet+Dalan+Koyu",
+    "serpapi_knowledge_graph_search_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr-TR&kgmid=%2Fg%2F1v402503&q=Cennet+Dalan+Koyu",
+    "place_id": "ChIJY68bcnd3uhQRF-rfMBaKQ4A",
+    "local_map": {
+      "image": "https://serpapi.com/searches/6a7f2e4f8270311eae97b45c/images/4a0cstPzx0mbBGRAQYMZMK3T8sykn4dvHxQAwxvDY9Q.webp"
+    },
+    "rating": 3.5,
+    "review_count": 27,
+    "adres": "10400 Ayvalık/Balıkesir",
+    "adres_links": [
+      {
+        "text": "Adres",
+        "link": "https://www.google.com/search?sca_esv=28d5dd4666abb16a&gl=tr&hl=tr&sxsrf=APpeQns4WPeY06tsa2_vnscsB5KfxkIijw:1786719829060&q=cennet+dalan+koyu+adres&ludocid=9242382688208284183&sa=X&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQ6BN6BAhMEAI"
+      },
+      {
+        "text": "10400 Ayvalık/Balıkesir",
+        "link": "https://www.google.com/maps/place//data=!4m2!3m1!1s0x14ba7777721baf63:0x80438a1630dfea17?sa=X&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQ4kB6BAgfEAA&hl=tr&gl=tr"
+      }
+    ],
+    "telefon": "(0266) 327 12 11",
+    "unclaimed_listing": true,
+    "başkaları_ayrıca_şunları_da_aradı": [
+      {
+        "name": "Ortunç Koyu",
+        "link": "https://www.google.com/search?sca_esv=28d5dd4666abb16a&gl=tr&hl=tr&sxsrf=APpeQns4WPeY06tsa2_vnscsB5KfxkIijw:1786719829060&si=APenkKmVGdgpMPDQZoEWS8RIAhsqXAKlNLP0B8DNkkiU9KPI0VYvCLOz2WWr4KDfUXgIH6A2wrq0d-aTWMs5ba3Se2SoRc616Pc2TTYrlT2YMGOh3dVYD8UqJd9XpZS0TvV8DUU908aWk9JvAd0KN-EXWqTXmFa_i6-cVTx5luq8S5Ge235-nms3pAdtWhk-KbCiuK_7pyufTLYdBG4WQWP9rAEfJYKQ5vasep1AxA88AGy3mB2XaUZ6HeBhDEFzCjtUZDlNf_0-8_eabaHlMTg0VXUpw46Mlx1FKWTZxQSoBd6nQX8iqpr4JFkuBDvvmenfS9JuugBG&q=Ortun%C3%A7+Koyu&sa=X&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQs9oBKAB6BAhlEAU",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr&q=Ortun%C3%A7+Koyu&si=APenkKmVGdgpMPDQZoEWS8RIAhsqXAKlNLP0B8DNkkiU9KPI0VYvCLOz2WWr4KDfUXgIH6A2wrq0d-aTWMs5ba3Se2SoRc616Pc2TTYrlT2YMGOh3dVYD8UqJd9XpZS0TvV8DUU908aWk9JvAd0KN-EXWqTXmFa_i6-cVTx5luq8S5Ge235-nms3pAdtWhk-KbCiuK_7pyufTLYdBG4WQWP9rAEfJYKQ5vasep1AxA88AGy3mB2XaUZ6HeBhDEFzCjtUZDlNf_0-8_eabaHlMTg0VXUpw46Mlx1FKWTZxQSoBd6nQX8iqpr4JFkuBDvvmenfS9JuugBG",
+        "image": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWnKpFIE6u2lei2tHqW2zwGlaL1cSku4_KIn8flpO5MRw_XJlxIbW_Dv46yvq4kDEaQCA5HqDMmsmjIt9O2gbKcwU4hPFe2y1WxZZx5-oGj_m1brfZq1ntXHygM4qQ15EXtXwiyiyA=w153-h115-k-no"
+      },
+      {
+        "name": "Patriçya Burnu",
+        "link": "https://www.google.com/search?sca_esv=28d5dd4666abb16a&gl=tr&hl=tr&sxsrf=APpeQns4WPeY06tsa2_vnscsB5KfxkIijw:1786719829060&si=APenkKmVGdgpMPDQZoEWS8RIAhsqXAKlNLP0B8DNkkiU9KPI0ehHtDfZ_etLFLZJr-NcoT4TzoUS8VVmZWL55FSt8PbrMW8s-oOZZbY0KAvis4bTySX_PzR822iZtsNf6ebxx56IEDYVfm5CWmf-RK2kgQDqzWZmX2Xkx4C6c3-qPAD0I185qWJ0SbpWMgDNhf86U9Xphinm1f31bYKrOQ1jr4reKdZIxUMmE9NxWYpK6676AxURJCrA0KKN9srF8ytKXwz4MlLqW8cvbXjZoPI3yqv5ao_0mlVRSx7JCwNaz8HAdo50Xxyev6CRY2qgfk709r677oI5&q=Patri%C3%A7ya+Burnu&sa=X&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQs9oBKAB6BAhlEAk",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr&q=Patri%C3%A7ya+Burnu&si=APenkKmVGdgpMPDQZoEWS8RIAhsqXAKlNLP0B8DNkkiU9KPI0ehHtDfZ_etLFLZJr-NcoT4TzoUS8VVmZWL55FSt8PbrMW8s-oOZZbY0KAvis4bTySX_PzR822iZtsNf6ebxx56IEDYVfm5CWmf-RK2kgQDqzWZmX2Xkx4C6c3-qPAD0I185qWJ0SbpWMgDNhf86U9Xphinm1f31bYKrOQ1jr4reKdZIxUMmE9NxWYpK6676AxURJCrA0KKN9srF8ytKXwz4MlLqW8cvbXjZoPI3yqv5ao_0mlVRSx7JCwNaz8HAdo50Xxyev6CRY2qgfk709r677oI5",
+        "image": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWmBbFEdWyEiv9UEAPlsgqxML4x4CclONFXgOatIkH-5HomcUL-Whh5T8YfRc_hgaFVCd1zF4W0O2VTDVapLKXXnq0Fpavv3RHCfsELlXlAEHCBHf_yYO4p5lr9VjLAVLcCeOV8=w204-h115-k-no"
+      },
+      {
+        "name": "Cunda Mocamp",
+        "link": "https://www.google.com/search?sca_esv=28d5dd4666abb16a&gl=tr&hl=tr&sxsrf=APpeQns4WPeY06tsa2_vnscsB5KfxkIijw:1786719829060&si=APenkKmVGdgpMPDQZoEWS8RIAhsqXAKlNLP0B8DNkkiU9KPI0T-xImLWhAsEYHj43lxW5HqnwcNK12HVOFYn9_7C2bm5QnK8aPJ4x_8jE7ek-57fwtl8yEk-x_I_dqus96GzGSekkTvKcBZcd9L7E7-uE9Ta0svvkSkoGFoo6HCsmWuticZ7Knowu52lOkd-g6LJxLoqPDeCw2z458PKtQdstwYZGpE3ZC__tKqdZWFYAG4Qv3bM5fTguZMfWlMp8P1TEmTp3BED5jYloMQuyAjLMTFzlMVTqlRETEdwaVfcp0CFn8TDBPuk1hWgtFTl0VB2vYOoCjBO&q=Cunda+Mocamp&sa=X&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQs9oBKAB6BAhlEA0",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr&q=Cunda+Mocamp&si=APenkKmVGdgpMPDQZoEWS8RIAhsqXAKlNLP0B8DNkkiU9KPI0T-xImLWhAsEYHj43lxW5HqnwcNK12HVOFYn9_7C2bm5QnK8aPJ4x_8jE7ek-57fwtl8yEk-x_I_dqus96GzGSekkTvKcBZcd9L7E7-uE9Ta0svvkSkoGFoo6HCsmWuticZ7Knowu52lOkd-g6LJxLoqPDeCw2z458PKtQdstwYZGpE3ZC__tKqdZWFYAG4Qv3bM5fTguZMfWlMp8P1TEmTp3BED5jYloMQuyAjLMTFzlMVTqlRETEdwaVfcp0CFn8TDBPuk1hWgtFTl0VB2vYOoCjBO",
+        "image": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWllm6uAN7b_2ZXpm90YxIg6fIcEGHOf5TQ2MLR7kagqtFn0SakShbJlgvQL0LRqU23sb_5dKJ4V_mxyqqeZWcIBgrHEoUC09XGWasF88MhtBzSSN3SSG3ljErSfKO2xQYbGXyjh=w204-h115-k-no"
+      },
+      {
+        "name": "Murat Reis Çamlık Camping",
+        "link": "https://www.google.com/search?sca_esv=28d5dd4666abb16a&gl=tr&hl=tr&sxsrf=APpeQns4WPeY06tsa2_vnscsB5KfxkIijw:1786719829060&si=APenkKmVGdgpMPDQZoEWS8RIAhsqXAKlNLP0B8DNkkiU9KPI0eQ4NXEwYHwEQxNAHo_kfMdkkm4zBBGACRVOBaF6mvMDCFntVv5UdRQWKKE2MT3C1Z097ZIYzIIRYeTIzHjefo5_EdVSlyIOO4K_AZkis0vkEeszEIYalRiDL9V5eeEhoZ2oOm5MChtu-Bc0lfwBV0k1cdfV5CONkbDeJHqPGgaYtdcNQzHbC5rwgzRFM83II4FLvEvmoVpi8TeXSrNAETJhKtFvFi5ZERVCaHw5l8-o94in64QjgDCZsJ_ugIwxh3T76v1q7H4dyzkpCB7MkkFWHumVOp27470PwL4sNJFc-l2XbQ%3D%3D&q=Murat+Reis+%C3%87aml%C4%B1k+Camping&sa=X&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQs9oBKAB6BAhlEBE",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr&q=Murat+Reis+%C3%87aml%C4%B1k+Camping&si=APenkKmVGdgpMPDQZoEWS8RIAhsqXAKlNLP0B8DNkkiU9KPI0eQ4NXEwYHwEQxNAHo_kfMdkkm4zBBGACRVOBaF6mvMDCFntVv5UdRQWKKE2MT3C1Z097ZIYzIIRYeTIzHjefo5_EdVSlyIOO4K_AZkis0vkEeszEIYalRiDL9V5eeEhoZ2oOm5MChtu-Bc0lfwBV0k1cdfV5CONkbDeJHqPGgaYtdcNQzHbC5rwgzRFM83II4FLvEvmoVpi8TeXSrNAETJhKtFvFi5ZERVCaHw5l8-o94in64QjgDCZsJ_ugIwxh3T76v1q7H4dyzkpCB7MkkFWHumVOp27470PwL4sNJFc-l2XbQ%3D%3D",
+        "image": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkb4PAcU-zm9TNMfWvjsa2JC4wfw5W4YbHx0E5CWEbPZbaFlTBoB6ya96ezDZb6o1uCDZpxc-dC3ny__PnPR0a4ofYcdatdM0-PSs_BhRZDjdDl75i_mB4jji8RN9hUAL3iDAUemg=w204-h115-k-no"
+      }
+    ],
+    "başkaları_ayrıca_şunları_da_aradı_link": "https://www.google.com/search?sca_esv=28d5dd4666abb16a&gl=tr&hl=tr&sxsrf=APpeQns4WPeY06tsa2_vnscsB5KfxkIijw:1786719829060&q=Cennet+Dalan+Koyu&stick=H4sIAAAAAAAAAONgFuLWT9c3LDMxMDI1MFZC5mgJBmempJYnVhb7pVaUBJekFhT_YtTxLs3JScw7sjH5yMacxKIjG_MUKhMLSo5sPDL_yEaFlMwj81OLFBKLEnMTgbKLWAWdU_PyUksUXIDcPAXv_MrSHayMt9gkGd44VAT-XybyYcPcrNeXfnIsWHNsh4Jbpk0uANAfNWeRAAAA&sa=X&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQzO0BKAR6BAhlEBM",
+    "başkaları_ayrıca_şunları_da_aradı_stick": "H4sIAAAAAAAAAONgFuLWT9c3LDMxMDI1MFZC5mgJBmempJYnVhb7pVaUBJekFhT_YtTxLs3JScw7sjH5yMacxKIjG_MUKhMLSo5sPDL_yEaFlMwj81OLFBKLEnMTgbKLWAWdU_PyUksUXIDcPAXv_MrSHayMt9gkGd44VAT-XybyYcPcrNeXfnIsWHNsh4Jbpk0uANAfNWeRAAAA"
+  },
+  "related_questions": [
+    {
+      "question": "Cennet Ada Koyu nerededir?",
+      "type": "ai_overview",
+      "page_token": "dZgjonicHdBdToMwAADgeJk9DpBtZksWk0qBoStSSgt9MfzIulF-JnXdePMunsrTaLzBl-_rWx675ucuFUoN48YwtNbzQ98f5Pu87FsjH29daZS5lEVeNpvVw8p6rMstHDV46jWIkmGgDjaJNyrGdjqkVBdQiDDFEtkUcoYZdYXAdrDk7WKqbDwQAlWe9NfivrEZVM8kSa4xDHxiNSq2uODe2swd7uDWsqu2mgqCeGG5KG_kEnn0nHiDJif5Elk42TcLnZ_AOTLdNu6A4Cl1GaxA1KI4hsiPJ36JaMBYov486JyZmFQ-eg2dXexanCC6FlWz5hHhWUFoWFjgs5wyVSVQe8cAYB_dQsbJ3guyyBTXAva3dOI1mWSLOqB5ulM8lUcCKZjV5WVrz_7Htm91qzbDR3_4BcXhedg",
+      "serpapi_ai_overview_link": "https://serpapi.com/search.json?engine=google_ai_overview&page_token=dZgjonicHdBdToMwAADgeJk9DpBtZksWk0qBoStSSgt9MfzIulF-JnXdePMunsrTaLzBl-_rWx675ucuFUoN48YwtNbzQ98f5Pu87FsjH29daZS5lEVeNpvVw8p6rMstHDV46jWIkmGgDjaJNyrGdjqkVBdQiDDFEtkUcoYZdYXAdrDk7WKqbDwQAlWe9NfivrEZVM8kSa4xDHxiNSq2uODe2swd7uDWsqu2mgqCeGG5KG_kEnn0nHiDJif5Elk42TcLnZ_AOTLdNu6A4Cl1GaxA1KI4hsiPJ36JaMBYov486JyZmFQ-eg2dXexanCC6FlWz5hHhWUFoWFjgs5wyVSVQe8cAYB_dQsbJ3guyyBTXAva3dOI1mWSLOqB5ulM8lUcCKZjV5WVrz_7Htm91qzbDR3_4BcXhedg",
+      "next_page_token": "eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFFQkNtSkJTbWxVTkhSS2VGYzNaVzlTUWxsNk5uRldNV3BtUmpRNFVVUjJjVVZQWVZCNU1sTnVaRGcwYkZvd1FrbEdWbWRMYmxwZlVrdExOMTlHWXpoalptSmFUazExYlhSNlUwRnhiVFJPZGxneFdVWjNXRnBmTFhSSGNGWnZNRmRpYlRrMFFSSVhWbE0xWDJGMlQxbEJObGh0TlU1dlVHNXpOaTExUVRBYUlrRkVjM0k1WmxGaE5XMVNXVVoxYUZwcU9UTm1PWEJ3TjFSNFMyTXpabkpwTjFFIiwiZmN2IjoiMyIsImVpIjoiVlM1X2F2T1lBNlhtNU5vUG5zNi11QTAiLCJxYyI6IkNoRmpaVzV1WlhRZ1pHRnNZVzRnYTI5NWRSQWhmU3B5dEQ2aUFRSjBjZyIsInF1ZXN0aW9uIjoiQ2VubmV0IEFkYSBLb3l1IG5lcmVkZWRpcj8iLCJsayI6IkdoWmpaVzV1WlhRZ1lXUmhJR3R2ZVhVZ2JtVnlaV1JsIiwiYnMiOiJjMjJQUFFyQ1FCQ0ZzZDNLU3NJMmpqLVF5aWFGYlZETGRKN0FsMlNKdzY2anJDWVFiNVU3NUdDdUdoQ0M1ZkM5N19GR2JaVS1HQkh6b0YwSnlxNXRUV0s4S1UzSlBrMGlQU3UtRklIYUgxV1pXZzNlMjRrRkJJOGNyUU5WWExKalR4ZE9rN1ZlRGdWZi1XOU1uZFItMXpad2ZXZmpCeWl2WFMwUUdnODd3OXEtazNEbTdDcW14dmlQZjJmaFo1cG9IV0Zvb2RGcWRWU2JfWWVZZTFBT2RTaUpBenREUW9fRjVVWndFQWZmZDlRZ2ZMN1E4X3duRkc5aGxKdE9YZyIsImlkIjoiZmNfVlM1X2F2T1lBNlhtNU5vUG5zNi11QTBfNCJ9",
+      "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google_related_questions&google_domain=google.com&next_page_token=eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFFQkNtSkJTbWxVTkhSS2VGYzNaVzlTUWxsNk5uRldNV3BtUmpRNFVVUjJjVVZQWVZCNU1sTnVaRGcwYkZvd1FrbEdWbWRMYmxwZlVrdExOMTlHWXpoalptSmFUazExYlhSNlUwRnhiVFJPZGxneFdVWjNXRnBmTFhSSGNGWnZNRmRpYlRrMFFSSVhWbE0xWDJGMlQxbEJObGh0TlU1dlVHNXpOaTExUVRBYUlrRkVjM0k1WmxGaE5XMVNXVVoxYUZwcU9UTm1PWEJ3TjFSNFMyTXpabkpwTjFFIiwiZmN2IjoiMyIsImVpIjoiVlM1X2F2T1lBNlhtNU5vUG5zNi11QTAiLCJxYyI6IkNoRmpaVzV1WlhRZ1pHRnNZVzRnYTI5NWRSQWhmU3B5dEQ2aUFRSjBjZyIsInF1ZXN0aW9uIjoiQ2VubmV0IEFkYSBLb3l1IG5lcmVkZWRpcj8iLCJsayI6IkdoWmpaVzV1WlhRZ1lXUmhJR3R2ZVhVZ2JtVnlaV1JsIiwiYnMiOiJjMjJQUFFyQ1FCQ0ZzZDNLU3NJMmpqLVF5aWFGYlZETGRKN0FsMlNKdzY2anJDWVFiNVU3NUdDdUdoQ0M1ZkM5N19GR2JaVS1HQkh6b0YwSnlxNXRUV0s4S1UzSlBrMGlQU3UtRklIYUgxV1pXZzNlMjRrRkJJOGNyUU5WWExKalR4ZE9rN1ZlRGdWZi1XOU1uZFItMXpad2ZXZmpCeWl2WFMwUUdnODd3OXEtazNEbTdDcW14dmlQZjJmaFo1cG9IV0Zvb2RGcWRWU2JfWWVZZTFBT2RTaUpBenREUW9fRjVVWndFQWZmZDlRZ2ZMN1E4X3duRkc5aGxKdE9YZyIsImlkIjoiZmNfVlM1X2F2T1lBNlhtNU5vUG5zNi11QTBfNCJ9"
+    },
+    {
+      "question": "Cennet Koyu'na arabayla gidilir mi?",
+      "type": "ai_overview",
+      "page_token": "bzn6cnicHdBRbpswAABQ9TL9bAyETIkUVXJKWKzixIAN-GcyNpDGBtzGTQh_u8tOtdNM2jvC-_3HfAz679Pt7Jy9bhaL-_3-0o1jZ5oXOfYLcX0MciGFMbWQerP6sfJeW7mNvg9w93mAhFrL3lKQ9cplGnGes50KoOWlPTIa4tIPBd55fZ55rgZnkETdJAcDFevumb8eG70MlNl_pXEX4j3jrEgcptO-1sQRL33HgaWKOlwzPak3U2YXFErPPBTYn4-lPYli0hVbo4pikAENcmqRDCA-FlMqGJwbc_AIkMv8wnEapKdyRlFjeE8vBlQAwToOGY3sDQfmsyqWrhpYImYzRGdV0Jm1VclPBY38IgZe3q9JPST-e8lgAscPQtNZXkxP6dUXUch57IAEWNR6mlWMWjKrVWPQLf-JQkKeW3nbBs__P7e_2t5t7NfY_QP8-4MB",
+      "serpapi_ai_overview_link": "https://serpapi.com/search.json?engine=google_ai_overview&page_token=bzn6cnicHdBRbpswAABQ9TL9bAyETIkUVXJKWKzixIAN-GcyNpDGBtzGTQh_u8tOtdNM2jvC-_3HfAz679Pt7Jy9bhaL-_3-0o1jZ5oXOfYLcX0MciGFMbWQerP6sfJeW7mNvg9w93mAhFrL3lKQ9cplGnGes50KoOWlPTIa4tIPBd55fZ55rgZnkETdJAcDFevumb8eG70MlNl_pXEX4j3jrEgcptO-1sQRL33HgaWKOlwzPak3U2YXFErPPBTYn4-lPYli0hVbo4pikAENcmqRDCA-FlMqGJwbc_AIkMv8wnEapKdyRlFjeE8vBlQAwToOGY3sDQfmsyqWrhpYImYzRGdV0Jm1VclPBY38IgZe3q9JPST-e8lgAscPQtNZXkxP6dUXUch57IAEWNR6mlWMWjKrVWPQLf-JQkKeW3nbBs__P7e_2t5t7NfY_QP8-4MB",
+      "next_page_token": "eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFFQkNtSkJTbWxVTkhSS2VGYzNaVzlTUWxsNk5uRldNV3BtUmpRNFVVUjJjVVZQWVZCNU1sTnVaRGcwYkZvd1FrbEdWbWRMYmxwZlVrdExOMTlHWXpoalptSmFUazExYlhSNlUwRnhiVFJPZGxneFdVWjNXRnBmTFhSSGNGWnZNRmRpYlRrMFFSSVhWbE0xWDJGMlQxbEJObGh0TlU1dlVHNXpOaTExUVRBYUlrRkVjM0k1WmxGaE5XMVNXVVoxYUZwcU9UTm1PWEJ3TjFSNFMyTXpabkpwTjFFIiwiZmN2IjoiMyIsImVpIjoiVlM1X2F2T1lBNlhtNU5vUG5zNi11QTAiLCJxYyI6IkNoRmpaVzV1WlhRZ1pHRnNZVzRnYTI5NWRSQWhmU3B5dEQ2aUFRSjBjZyIsInF1ZXN0aW9uIjoiQ2VubmV0IEtveXUnbmEgYXJhYmF5bGEgZ2lkaWxpciBtaT8iLCJsayI6IkdpSmpaVzV1WlhRZ2EyOTVkU0J1WVNCaGNtRmlZWGxzWVNCbmFXUnBiR2x5SUcxcCIsImJzIjoiYzIyUFBRckNRQkNGc2QzS1NzSTJqai1ReWlhRmJWRExkSjdBbDJTSnc2NmpyQ1lRYjVVNzVHQ3VHaENDNWZDOTdfRkdiWlUtR0JIem9GMEp5cTV0VFdLOEtVM0pQazBpUFN1LUZJSGFIMVdaV2czZTI0a0ZCSThjclFOVlhMSmpUeGRPazdWZURnVmYtVzlNbmRSLTF6WndmV2ZqQnlpdlhTMFFHZzg3dzlxLWszRG03Q3FteHZpUGYyZmhaNXBvSFdGb29kRnFkVlNiX1llWWUxQU9kU2lKQXp0RFFvX0Y1VVp3RUFmZmQ5UWdmTDdROF93bkZHOWhsSnRPWGciLCJpZCI6ImZjX1ZTNV9hdk9ZQTZYbTVOb1BuczYtdUEwXzQifQ==",
+      "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google_related_questions&google_domain=google.com&next_page_token=eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFFQkNtSkJTbWxVTkhSS2VGYzNaVzlTUWxsNk5uRldNV3BtUmpRNFVVUjJjVVZQWVZCNU1sTnVaRGcwYkZvd1FrbEdWbWRMYmxwZlVrdExOMTlHWXpoalptSmFUazExYlhSNlUwRnhiVFJPZGxneFdVWjNXRnBmTFhSSGNGWnZNRmRpYlRrMFFSSVhWbE0xWDJGMlQxbEJObGh0TlU1dlVHNXpOaTExUVRBYUlrRkVjM0k1WmxGaE5XMVNXVVoxYUZwcU9UTm1PWEJ3TjFSNFMyTXpabkpwTjFFIiwiZmN2IjoiMyIsImVpIjoiVlM1X2F2T1lBNlhtNU5vUG5zNi11QTAiLCJxYyI6IkNoRmpaVzV1WlhRZ1pHRnNZVzRnYTI5NWRSQWhmU3B5dEQ2aUFRSjBjZyIsInF1ZXN0aW9uIjoiQ2VubmV0IEtveXUnbmEgYXJhYmF5bGEgZ2lkaWxpciBtaT8iLCJsayI6IkdpSmpaVzV1WlhRZ2EyOTVkU0J1WVNCaGNtRmlZWGxzWVNCbmFXUnBiR2x5SUcxcCIsImJzIjoiYzIyUFBRckNRQkNGc2QzS1NzSTJqai1ReWlhRmJWRExkSjdBbDJTSnc2NmpyQ1lRYjVVNzVHQ3VHaENDNWZDOTdfRkdiWlUtR0JIem9GMEp5cTV0VFdLOEtVM0pQazBpUFN1LUZJSGFIMVdaV2czZTI0a0ZCSThjclFOVlhMSmpUeGRPazdWZURnVmYtVzlNbmRSLTF6WndmV2ZqQnlpdlhTMFFHZzg3dzlxLWszRG03Q3FteHZpUGYyZmhaNXBvSFdGb29kRnFkVlNiX1llWWUxQU9kU2lKQXp0RFFvX0Y1VVp3RUFmZmQ5UWdmTDdROF93bkZHOWhsSnRPWGciLCJpZCI6ImZjX1ZTNV9hdk9ZQTZYbTVOb1BuczYtdUEwXzQifQ%3D%3D"
+    },
+    {
+      "question": "Ayvalık'ta bulunan Cennet Ada Koyu hakkında bilgi verir misiniz?",
+      "type": "ai_overview",
+      "page_token": "hU28fnicHdBbToNAFADQuJl-FghNbZs0prQzRSxDuMDMMD8GhlflGQEB_9yLq3I1Gpdwztd3dW_KnwdeDEPXHxRlmqZ13rZ5la5lWytRvzRSkVFVxZEsD9vHrfaUySPqJ-PcToYbdB29gOqjIUypcU4x2dxYPzgIZ2B2DuEwyyYZ3RIuKa9mYIVhN-TZ5ZUJwW6RnFigkj7WQReoO9sNhKwxSPxWNI7ZjQkWGgmsj7gOVZslrtQp8hDuJbVVinYbT7NGyiGwscWAl2rMqheCwb3RImJIqvZVzmACF_ppEbxo7Xp_iVGyCfWThzXhE7ovknIvXF-EsU-dWDNG-RkOSYCm690ywCSLw4QHZRHaSM6OKUrp51OKE-xg0P7MumCzR_WqWWXy46iv_seOr1k9HLr3Nv8FZn94kg",
+      "serpapi_ai_overview_link": "https://serpapi.com/search.json?engine=google_ai_overview&page_token=hU28fnicHdBbToNAFADQuJl-FghNbZs0prQzRSxDuMDMMD8GhlflGQEB_9yLq3I1Gpdwztd3dW_KnwdeDEPXHxRlmqZ13rZ5la5lWytRvzRSkVFVxZEsD9vHrfaUySPqJ-PcToYbdB29gOqjIUypcU4x2dxYPzgIZ2B2DuEwyyYZ3RIuKa9mYIVhN-TZ5ZUJwW6RnFigkj7WQReoO9sNhKwxSPxWNI7ZjQkWGgmsj7gOVZslrtQp8hDuJbVVinYbT7NGyiGwscWAl2rMqheCwb3RImJIqvZVzmACF_ppEbxo7Xp_iVGyCfWThzXhE7ovknIvXF-EsU-dWDNG-RkOSYCm690ywCSLw4QHZRHaSM6OKUrp51OKE-xg0P7MumCzR_WqWWXy46iv_seOr1k9HLr3Nv8FZn94kg",
+      "next_page_token": "eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFFQkNtSkJTbWxVTkhSS2VGYzNaVzlTUWxsNk5uRldNV3BtUmpRNFVVUjJjVVZQWVZCNU1sTnVaRGcwYkZvd1FrbEdWbWRMYmxwZlVrdExOMTlHWXpoalptSmFUazExYlhSNlUwRnhiVFJPZGxneFdVWjNXRnBmTFhSSGNGWnZNRmRpYlRrMFFSSVhWbE0xWDJGMlQxbEJObGh0TlU1dlVHNXpOaTExUVRBYUlrRkVjM0k1WmxGaE5XMVNXVVoxYUZwcU9UTm1PWEJ3TjFSNFMyTXpabkpwTjFFIiwiZmN2IjoiMyIsImVpIjoiVlM1X2F2T1lBNlhtNU5vUG5zNi11QTAiLCJxYyI6IkNoRmpaVzV1WlhRZ1pHRnNZVzRnYTI5NWRSQWhmU3B5dEQ2aUFRSjBjZyIsInF1ZXN0aW9uIjoiQXl2YWzEsWsndGEgYnVsdW5hbiBDZW5uZXQgQWRhIEtveXUgaGFra8SxbmRhIGJpbGdpIHZlcmlyIG1pc2luaXo/IiwibGsiOiJHaGhoZVhaaGJNU3hheUJqWlc1dVpYUWdZV1JoSUd0dmVYVSIsImJzIjoiYzIyUFBRckNRQkNGc2QzS1NzSTJqai1ReWlhRmJWRExkSjdBbDJTSnc2NmpyQ1lRYjVVNzVHQ3VHaENDNWZDOTdfRkdiWlUtR0JIem9GMEp5cTV0VFdLOEtVM0pQazBpUFN1LUZJSGFIMVdaV2czZTI0a0ZCSThjclFOVlhMSmpUeGRPazdWZURnVmYtVzlNbmRSLTF6WndmV2ZqQnlpdlhTMFFHZzg3dzlxLWszRG03Q3FteHZpUGYyZmhaNXBvSFdGb29kRnFkVlNiX1llWWUxQU9kU2lKQXp0RFFvX0Y1VVp3RUFmZmQ5UWdmTDdROF93bkZHOWhsSnRPWGciLCJpZCI6ImZjX1ZTNV9hdk9ZQTZYbTVOb1BuczYtdUEwXzQifQ==",
+      "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google_related_questions&google_domain=google.com&next_page_token=eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFFQkNtSkJTbWxVTkhSS2VGYzNaVzlTUWxsNk5uRldNV3BtUmpRNFVVUjJjVVZQWVZCNU1sTnVaRGcwYkZvd1FrbEdWbWRMYmxwZlVrdExOMTlHWXpoalptSmFUazExYlhSNlUwRnhiVFJPZGxneFdVWjNXRnBmTFhSSGNGWnZNRmRpYlRrMFFSSVhWbE0xWDJGMlQxbEJObGh0TlU1dlVHNXpOaTExUVRBYUlrRkVjM0k1WmxGaE5XMVNXVVoxYUZwcU9UTm1PWEJ3TjFSNFMyTXpabkpwTjFFIiwiZmN2IjoiMyIsImVpIjoiVlM1X2F2T1lBNlhtNU5vUG5zNi11QTAiLCJxYyI6IkNoRmpaVzV1WlhRZ1pHRnNZVzRnYTI5NWRSQWhmU3B5dEQ2aUFRSjBjZyIsInF1ZXN0aW9uIjoiQXl2YWzEsWsndGEgYnVsdW5hbiBDZW5uZXQgQWRhIEtveXUgaGFra8SxbmRhIGJpbGdpIHZlcmlyIG1pc2luaXo%2FIiwibGsiOiJHaGhoZVhaaGJNU3hheUJqWlc1dVpYUWdZV1JoSUd0dmVYVSIsImJzIjoiYzIyUFBRckNRQkNGc2QzS1NzSTJqai1ReWlhRmJWRExkSjdBbDJTSnc2NmpyQ1lRYjVVNzVHQ3VHaENDNWZDOTdfRkdiWlUtR0JIem9GMEp5cTV0VFdLOEtVM0pQazBpUFN1LUZJSGFIMVdaV2czZTI0a0ZCSThjclFOVlhMSmpUeGRPazdWZURnVmYtVzlNbmRSLTF6WndmV2ZqQnlpdlhTMFFHZzg3dzlxLWszRG03Q3FteHZpUGYyZmhaNXBvSFdGb29kRnFkVlNiX1llWWUxQU9kU2lKQXp0RFFvX0Y1VVp3RUFmZmQ5UWdmTDdROF93bkZHOWhsSnRPWGciLCJpZCI6ImZjX1ZTNV9hdk9ZQTZYbTVOb1BuczYtdUEwXzQifQ%3D%3D"
+    },
+    {
+      "question": "Balıkesir Cunda'da hangi kamp alanları var?",
+      "type": "ai_overview",
+      "page_token": "D4s-4nicHdBLbqMwAABQ9TJdNjaEVIkUjcoASVAMtfGHeFMBBlLAxmloabObu_RUPc2MZvuW78_38Gr6n7uP8zTZ62axmOf5oR3HdqgfqlEviuuXqRZVMQxlUfWb1eMK_mqqbfh-8H9fDj5m1vKAgMyNCQtlkTLvJMV0TFzr0t6LWQbTk_O5zGgUprs4UUIxYZ4cquGhNKSpzdOU3VSvuuGZM3uVLt8n3T_LEUgYwdixftnLSUXkku0TgoF3zhzkIWd9oWwiRwHHdHfWhcPmwvixEmCiALqlJgHJ7RJxucqMpTWPAwn5he7WshhGD3UDz0F0lEG7pB36SmDSp3slTtrusfFJeFaC3XhzyuWzYKEjdgBSvcalQc4x5z7yx1fMyK3qBs3Y5w2D6L3WoUujCiQ9nlEQMwaxW7N2ybRN1HzfVB9b9_7_5_al0dPGvo3tX3nSgRw",
+      "serpapi_ai_overview_link": "https://serpapi.com/search.json?engine=google_ai_overview&page_token=D4s-4nicHdBLbqMwAABQ9TJdNjaEVIkUjcoASVAMtfGHeFMBBlLAxmloabObu_RUPc2MZvuW78_38Gr6n7uP8zTZ62axmOf5oR3HdqgfqlEviuuXqRZVMQxlUfWb1eMK_mqqbfh-8H9fDj5m1vKAgMyNCQtlkTLvJMV0TFzr0t6LWQbTk_O5zGgUprs4UUIxYZ4cquGhNKSpzdOU3VSvuuGZM3uVLt8n3T_LEUgYwdixftnLSUXkku0TgoF3zhzkIWd9oWwiRwHHdHfWhcPmwvixEmCiALqlJgHJ7RJxucqMpTWPAwn5he7WshhGD3UDz0F0lEG7pB36SmDSp3slTtrusfFJeFaC3XhzyuWzYKEjdgBSvcalQc4x5z7yx1fMyK3qBs3Y5w2D6L3WoUujCiQ9nlEQMwaxW7N2ybRN1HzfVB9b9_7_5_al0dPGvo3tX3nSgRw",
+      "next_page_token": "eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFFQkNtSkJTbWxVTkhSS2VGYzNaVzlTUWxsNk5uRldNV3BtUmpRNFVVUjJjVVZQWVZCNU1sTnVaRGcwYkZvd1FrbEdWbWRMYmxwZlVrdExOMTlHWXpoalptSmFUazExYlhSNlUwRnhiVFJPZGxneFdVWjNXRnBmTFhSSGNGWnZNRmRpYlRrMFFSSVhWbE0xWDJGMlQxbEJObGh0TlU1dlVHNXpOaTExUVRBYUlrRkVjM0k1WmxGaE5XMVNXVVoxYUZwcU9UTm1PWEJ3TjFSNFMyTXpabkpwTjFFIiwiZmN2IjoiMyIsImVpIjoiVlM1X2F2T1lBNlhtNU5vUG5zNi11QTAiLCJxYyI6IkNoRmpaVzV1WlhRZ1pHRnNZVzRnYTI5NWRSQWhmU3B5dEQ2aUFRSjBjZyIsInF1ZXN0aW9uIjoiQmFsxLFrZXNpciBDdW5kYSdkYSBoYW5naSBrYW1wIGFsYW5sYXLEsSB2YXI/IiwibGsiOiJHaDlpWVd6RXNXdGxjMmx5SUdOMWJtUmhJR3RoYlhBZ1lXeGhibXhoY3NTeCIsImJzIjoiYzIyUFBRckNRQkNGc2QzS1NzSTJqai1ReWlhRmJWRExkSjdBbDJTSnc2NmpyQ1lRYjVVNzVHQ3VHaENDNWZDOTdfRkdiWlUtR0JIem9GMEp5cTV0VFdLOEtVM0pQazBpUFN1LUZJSGFIMVdaV2czZTI0a0ZCSThjclFOVlhMSmpUeGRPazdWZURnVmYtVzlNbmRSLTF6WndmV2ZqQnlpdlhTMFFHZzg3dzlxLWszRG03Q3FteHZpUGYyZmhaNXBvSFdGb29kRnFkVlNiX1llWWUxQU9kU2lKQXp0RFFvX0Y1VVp3RUFmZmQ5UWdmTDdROF93bkZHOWhsSnRPWGciLCJpZCI6ImZjX1ZTNV9hdk9ZQTZYbTVOb1BuczYtdUEwXzQifQ==",
+      "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google_related_questions&google_domain=google.com&next_page_token=eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFFQkNtSkJTbWxVTkhSS2VGYzNaVzlTUWxsNk5uRldNV3BtUmpRNFVVUjJjVVZQWVZCNU1sTnVaRGcwYkZvd1FrbEdWbWRMYmxwZlVrdExOMTlHWXpoalptSmFUazExYlhSNlUwRnhiVFJPZGxneFdVWjNXRnBmTFhSSGNGWnZNRmRpYlRrMFFSSVhWbE0xWDJGMlQxbEJObGh0TlU1dlVHNXpOaTExUVRBYUlrRkVjM0k1WmxGaE5XMVNXVVoxYUZwcU9UTm1PWEJ3TjFSNFMyTXpabkpwTjFFIiwiZmN2IjoiMyIsImVpIjoiVlM1X2F2T1lBNlhtNU5vUG5zNi11QTAiLCJxYyI6IkNoRmpaVzV1WlhRZ1pHRnNZVzRnYTI5NWRSQWhmU3B5dEQ2aUFRSjBjZyIsInF1ZXN0aW9uIjoiQmFsxLFrZXNpciBDdW5kYSdkYSBoYW5naSBrYW1wIGFsYW5sYXLEsSB2YXI%2FIiwibGsiOiJHaDlpWVd6RXNXdGxjMmx5SUdOMWJtUmhJR3RoYlhBZ1lXeGhibXhoY3NTeCIsImJzIjoiYzIyUFBRckNRQkNGc2QzS1NzSTJqai1ReWlhRmJWRExkSjdBbDJTSnc2NmpyQ1lRYjVVNzVHQ3VHaENDNWZDOTdfRkdiWlUtR0JIem9GMEp5cTV0VFdLOEtVM0pQazBpUFN1LUZJSGFIMVdaV2czZTI0a0ZCSThjclFOVlhMSmpUeGRPazdWZURnVmYtVzlNbmRSLTF6WndmV2ZqQnlpdlhTMFFHZzg3dzlxLWszRG03Q3FteHZpUGYyZmhaNXBvSFdGb29kRnFkVlNiX1llWWUxQU9kU2lKQXp0RFFvX0Y1VVp3RUFmZmQ5UWdmTDdROF93bkZHOWhsSnRPWGciLCJpZCI6ImZjX1ZTNV9hdk9ZQTZYbTVOb1BuczYtdUEwXzQifQ%3D%3D"
+    }
+  ],
+  "ai_overview": {
+    "text_blocks": [
+      {
+        "type": "paragraph",
+        "snippet": "Balıkesir'in Ayvalık ilçesine bağlı Cunda Adası'nda yer alan Cennet Dalan Koyu, çam ormanlarıyla çevrili, berrak ve sığ deniziyle bilinen, tamamen bakir ve ücretsiz bir doğa ve kamp alanıdır. Tesis bulunmadığı için kalabalıktan uzak sakin bir kaçamak sunar.",
+        "snippet_links": [
+          {
+            "text": "Cunda Adası",
+            "link": "https://kampalanlari.tr/balikesir/ayvalik/cennet-dalan-koyu"
+          }
+        ],
+        "snippet_highlighted_words": [
+          "Balıkesir'in Ayvalık ilçesine bağlı Cunda Adası'nda yer alan Cennet Dalan Koyu, çam ormanlarıyla çevrili, berrak ve sığ deniziyle bilinen, tamamen bakir ve ücretsiz bir doğa ve kamp alanıdır"
+        ],
+        "reference_indexes": [
+          0,
+          1
+        ]
+      },
+      {
+        "type": "heading",
+        "snippet": "Genel Özellikler"
+      },
+      {
+        "type": "list",
+        "list": [
+          {
+            "snippet": "Çam ağaçları altında doğal gölgelik alanlar vardır."
+          },
+          {
+            "snippet": "Denizi berrak, sığ ve genellikle dalgasızdır."
+          },
+          {
+            "snippet": "Herhangi bir işletme, tesis, elektrik veya tuvalet imkanı bulunmaz.",
+            "snippet_links": [
+              {
+                "link": "https://medium.com/@yusufcakmak/kamp-g%C3%BCnl%C3%BCkleri-kad%C4%B1rga-koyu-cennet-dalyan-koyu-patri%C3%A7a-pateri%C3%A7a-koyu-a7b104f77697"
+              }
+            ]
+          }
+        ],
+        "reference_indexes": [
+          2
+        ]
+      },
+      {
+        "type": "heading",
+        "snippet": "Ulaşım ve Hazırlık"
+      },
+      {
+        "type": "list",
+        "list": [
+          {
+            "snippet": "Bölgeye giden yollar biraz bozuk ve zorludur."
+          },
+          {
+            "snippet": "Hiçbir sosyal imkan olmadığı için yiyecek, içecek, su ve kamp ekipmanları açısından tamamen hazırlıklı gitmek gerekir."
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "snippet": "Doğal koy kampı deneyimi ve karavanla seyahat hakkında fikir edinmek için bu videoyu izleyebilirsiniz:",
+        "video": {
+          "link": "https://www.youtube.com/watch?v=ad4ztFTAPEM",
+          "thumbnail": "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR9NOSMtK-UWskDnJICYDzabR_80m96EzGdjC1ST5G59Q5r0wzg"
+        }
+      },
+      {
+        "type": "paragraph",
+        "snippet": "Cennet Dalan Koyu'na kamp yapmak için mi yoksa günübirlik gezmek için mi gitmeyi düşünüyorsunuz? Ulaşım veya hazırlık aşamasında merak ettiğiniz başka bir detay var mı?"
+      }
+    ],
+    "references": [
+      {
+        "title": "Cennet Dalan Koyu - Ayvalık, Balıkesir - Kamp Alanlari",
+        "link": "https://kampalanlari.tr/balikesir/ayvalik/cennet-dalan-koyu",
+        "snippet": "Cunda Adası'nda yer alan Cennet Dalan Koyu, çam ağaçları, berrak denizi ve huzurlu atmosferiyle ücretsiz kamp yapmaya uygun, bakir ve doğal bir güzelliktir. Tes...",
+        "source": "kampalanlari.tr",
+        "thumbnail": "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcQKrCnoOZ0yBYzPLRyAFedS3okCm9mJgzyEb67uYTJe7ixE9F5HZvSEezHntuVH14AYqJ0mCBjc",
+        "source_icon": "https://encrypted-tbn3.gstatic.com/faviconV2?url=https://kampalanlari.tr&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+        "index": 0
+      },
+      {
+        "title": "Cennet Dalan Koyu - Kamp ve Seyahat Rehberi - Yamaçta",
+        "link": "https://yamacta.com/mekanlar/cennet-dalan-koyu/",
+        "snippet": "Ege'nin Saklı Köşesi: Ayvalık Cennet Dalan Koyu Rehberi. Ege Bölgesi'nin en popüler tatil rotalarından Ayvalık, sadece Cunda Adası ile değil, aynı zamanda bakir...",
+        "source": "yamacta.com",
+        "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcTOp_J8PCMfVEFoBvm8m1lPDnea1JNYMVTkPf8qR4Zku0SIoyji6wHtyWSkEAWyJRYUHd8ahHwT",
+        "source_icon": "https://encrypted-tbn1.gstatic.com/faviconV2?url=https://yamacta.com&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+        "index": 1
+      },
+      {
+        "title": "Kadırga Koyu- Cennet Dalyan Koyu- Patriça(Pateriça) Koyu - Medium",
+        "link": "https://medium.com/@yusufcakmak/kamp-g%C3%BCnl%C3%BCkleri-kad%C4%B1rga-koyu-cennet-dalyan-koyu-patri%C3%A7a-pateri%C3%A7a-koyu-a7b104f77697",
+        "snippet": "Burası kamp alanı olmadığı için elektrik, su vs gibi ihtiyaçlarınızı bu noktada gidermeniz mümkün değil. Yolun bozukluğu ulaşımı da kitliyor ve herhangi bir iht...",
+        "source": "medium.com",
+        "thumbnail": "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTg6HuoFUVLNmumeXJaf7osDO3rgmJEXWlhrU4xRLsQyYY6pNgAu_gTFSL4kRwEcU9i8lmikbY-",
+        "source_icon": "https://encrypted-tbn2.gstatic.com/faviconV2?url=https://medium.com&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+        "index": 2
+      }
+    ]
+  },
+  "organic_results": [
+    {
+      "position": 1,
+      "title": "Cennet Dalan Koyu | Balıkesir Kamp Alanları",
+      "link": "https://www.kampingturkiye.com/cennet-dalan-koyu-p-UlF5MlA3cml2b0JBMVFnWUlJZk9Hdz09",
+      "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.kampingturkiye.com/cennet-dalan-koyu-p-UlF5MlA3cml2b0JBMVFnWUlJZk9Hdz09&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQFnoECC0QAQ",
+      "displayed_link": "https://www.kampingturkiye.com › cennet-dalan-koyu-...",
+      "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAA-VBMVEVHcEzpzEHzyye92LTqzUHv1lTwyzHxzjnwzC_0yyL2yyL2yhjuzDz1yR7xzTT0yh71yh_1yhr2yBcjfzZWcFMiazev5sUVbysQfC0vaT1LjZ9zq4KQhIcXXikXays7c0Q_Z0ochTMVfCwgXzAaeTAShix9RVcjfTUYijEZgjAgZDc2Y0MtXDwXUSgcUyw6YEYZYisXUCocaC0eVy4iWDYrWjkkVTMfUi4bUS0tWz8ZTyoYVykuWDseUi9wVEI-Wz7DNzjIMTPILi_APD3DP0EdUS23SEnHMTLENTXFNjgqiz8nkj7GMzO9PT3ILjC1QT8mZzY3gUjFMjPM6n0MAAAAU3RSTlMAKV4GHQ1HOjV0hOETmU6ps8u0ZxeVAf79VgYLCf_8RR7M4qDI_w6e3uxiLzbpxijb_7mQX4ZyreQ93PxMn1txh5pvU3nrI6eOXT4_vTHKQqOfsUl9-BQAAAEwSURBVHgBxMy1YQQBEAPA-T9mZnP_PZoZYs-uFMq_O_nDOSCMxAgS36QZRDmK0ncJnEqq-NflOkZ69lkeQZaFedN2WfBtsOgjbRpXIfKC5AQYRtMcndOzGTjF3i3BurFzPJWD3FMfMxeXV9dubu-2h-bnAUeCAICC6E_2BmPb07Ztd9__LmvvBfZFFaf2h-NheTpfJpgMrrtb_zK5gyD3FOg9M2WxAnUfg5sy_FQQVxjeIMlgCUVVVA0sWFpXdUOmaNPQCZ2GSsCy1yaxMUYCboLMb-6qDWMjSCyAkeO63subDwSCinehIgGIohgPCZIg9gdekEaOP1hn-ZpY4FVxKuHHqKraT1wvrdnm3K6n7Ov2wkXX1V6Uuq7jVo6zMMXh0BZl_DRC4HzkCH-U-NeeAHOmJ0R-GBq2AAAAAElFTkSuQmCC.png",
+      "snippet": "Açıklama. Cennet Dalan Koyu Balıkesir kamp alanları ve Ayvalık kamp yerleri ile ilgili arama yapan doğa severlerin karşısına güzel bir alternatif olarak ...",
+      "snippet_highlighted_words": [
+        "Balıkesir kamp alanları ve Ayvalık kamp yerleri"
+      ],
+      "about_this_result": {
+        "source": {
+          "description": "Açıklama. Cennet Dalan Koyu Balıkesir kamp alanları ve Ayvalık kamp yerleri ile ilgili arama yapan doğa severlerin karşısına güzel bir alternatif olarak ...",
+          "source_info_link": "https://www.kampingturkiye.com/cennet-dalan-koyu-p-UlF5MlA3cml2b0JBMVFnWUlJZk9Hdz09",
+          "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAA-VBMVEVHcEzpzEHzyye92LTqzUHv1lTwyzHxzjnwzC_0yyL2yyL2yhjuzDz1yR7xzTT0yh71yh_1yhr2yBcjfzZWcFMiazev5sUVbysQfC0vaT1LjZ9zq4KQhIcXXikXays7c0Q_Z0ochTMVfCwgXzAaeTAShix9RVcjfTUYijEZgjAgZDc2Y0MtXDwXUSgcUyw6YEYZYisXUCocaC0eVy4iWDYrWjkkVTMfUi4bUS0tWz8ZTyoYVykuWDseUi9wVEI-Wz7DNzjIMTPILi_APD3DP0EdUS23SEnHMTLENTXFNjgqiz8nkj7GMzO9PT3ILjC1QT8mZzY3gUjFMjPM6n0MAAAAU3RSTlMAKV4GHQ1HOjV0hOETmU6ps8u0ZxeVAf79VgYLCf_8RR7M4qDI_w6e3uxiLzbpxijb_7mQX4ZyreQ93PxMn1txh5pvU3nrI6eOXT4_vTHKQqOfsUl9-BQAAAEwSURBVHgBxMy1YQQBEAPA-T9mZnP_PZoZYs-uFMq_O_nDOSCMxAgS36QZRDmK0ncJnEqq-NflOkZ69lkeQZaFedN2WfBtsOgjbRpXIfKC5AQYRtMcndOzGTjF3i3BurFzPJWD3FMfMxeXV9dubu-2h-bnAUeCAICC6E_2BmPb07Ztd9__LmvvBfZFFaf2h-NheTpfJpgMrrtb_zK5gyD3FOg9M2WxAnUfg5sy_FQQVxjeIMlgCUVVVA0sWFpXdUOmaNPQCZ2GSsCy1yaxMUYCboLMb-6qDWMjSCyAkeO63subDwSCinehIgGIohgPCZIg9gdekEaOP1hn-ZpY4FVxKuHHqKraT1wvrdnm3K6n7Ov2wkXX1V6Uuq7jVo6zMMXh0BZl_DRC4HzkCH-U-NeeAHOmJ0R-GBq2AAAAAElFTkSuQmCC.png"
+        },
+        "languages": [
+          "tr"
+        ],
+        "regions": [
+          "TR"
+        ]
+      },
+      "about_page_link": "https://www.google.com/search?q=About+https://www.kampingturkiye.com/cennet-dalan-koyu-p-UlF5MlA3cml2b0JBMVFnWUlJZk9Hdz09&tbm=ilp",
+      "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fwww.kampingturkiye.com%2Fcennet-dalan-koyu-p-UlF5MlA3cml2b0JBMVFnWUlJZk9Hdz09",
+      "source": "Kamping Türkiye"
+    },
+    {
+      "position": 2,
+      "title": "Cennet Koyu Ayvalık",
+      "link": "https://www.instagram.com/popular/cennet-koyu-ayval%C4%B1k/",
+      "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.instagram.com/popular/cennet-koyu-ayval%25C4%25B1k/&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQFnoECEoQAQ",
+      "displayed_link": "https://www.instagram.com › popular › cennet-koyu-ay...",
+      "favicon": "https://serpapi.com/searches/6a7f2e4f8270311eae97b45c/images/phrjJ6DQSlDjyFCQ5dhoMSvcs8jhedepRgu4JbUMRrk.png",
+      "snippet": "Haritalarda Datça Gerence Koyu olarak arattığınızda rahatlıkla ulaşabilirsiniz. Koyun suyu çok berrak olup dibini rahatlıkla görebilirsiniz ancak taşlık olduğu ...",
+      "snippet_highlighted_words": [
+        "Koyu"
+      ],
+      "about_this_result": {
+        "source": {
+          "description": "Haritalarda Datça Gerence Koyu olarak arattığınızda rahatlıkla ulaşabilirsiniz. Koyun suyu çok berrak olup dibini rahatlıkla görebilirsiniz ancak taşlık olduğu ...",
+          "source_info_link": "https://www.instagram.com/popular/cennet-koyu-ayval%C4%B1k/",
+          "icon": "https://serpapi.com/searches/6a7f2e4f8270311eae97b45c/images/phrjJ6DQSlDjyFCQ5dhoMTzPPC4s8BKdknUB8tk4pd8b5rrV22QAdytDJflaLOTO.png"
+        },
+        "languages": [
+          "tr"
+        ],
+        "regions": [
+          "TR"
+        ]
+      },
+      "about_page_link": "https://www.google.com/search?q=About+https://www.instagram.com/popular/cennet-koyu-ayval%C4%B1k/&tbm=ilp",
+      "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fwww.instagram.com%2Fpopular%2Fcennet-koyu-ayval%25C4%25B1k%2F",
+      "source": "Instagram"
+    },
+    {
+      "position": 3,
+      "title": "Cennet Dalan Koyu - Ayvalık, Balıkesir - Kamp Alanlari",
+      "link": "https://kampalanlari.tr/balikesir/ayvalik/cennet-dalan-koyu",
+      "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://kampalanlari.tr/balikesir/ayvalik/cennet-dalan-koyu&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQFnoECGAQAQ",
+      "displayed_link": "https://kampalanlari.tr › Balıkesir › Ayvalık",
+      "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAtFBMVEVHcEwAAAAAAAAAAAAAAAAAAAADAwMAAAABAAAJBwAAAAAAAAAbGhwBAAAAAAA8LwAVDwCdMRUAAACPj5AAAAAPDAA4EQdOPQAmEASCgoQjIySbm5wAAAAAAABRUVEwMDBHR0hb6OTn4QBbWlvn5-rh4eMAAADBwcPk5Obi4uTc3N7S0tRJSE08Oz6HbAA0NDakpKXKysxUU1j_USO1ORm8mADt7fB2dne0tLa7u71mZmd0XgBhi3Z2AAAAInRSTlMANS3wHEu3pKyXi378yz_1Df7d_meF2fys_dT-5Vjg4Nf-Buq1CAAAAPBJREFUKJHFkMduwzAQREVLlEj14p4KiCWkouoq5___K3RiOAog-mZ4jvMwO7trGA8VnNyAs-cgQDrobTcbUwuZaQYaFjvejX2iSLtRjKuvmQ6CxW4XWRq4XFRVhMeZ5edKbBza2Z6Q_WE0atWSCkGl-dsKX4YQPRHKW0pWP9E4nQ-uAj4VbXcqRLE-uzhJ3GHwQzS-3wuand10m_yVh28qk5f1SQq-BqpyvgRX6DRUHP2uY62QmfpwMHWvY-FrQWRZ5nldEsLfVYjZlyPCEK163rBPJXbk_QEDbKZeaE0sA9o2cv4JKQMhe-rC8X_dV9-sHBXN_jyiCgAAAABJRU5ErkJggg.png",
+      "snippet": "Cunda Adası'nda yer alan Cennet Dalan Koyu, çam ağaçları, berrak denizi ve huzurlu atmosferiyle ücretsiz kamp yapmaya uygun, bakir ve doğal bir güzelliktir.",
+      "snippet_highlighted_words": [
+        "Cennet Dalan Koyu"
+      ],
+      "about_this_result": {
+        "source": {
+          "description": "Cunda Adası'nda yer alan Cennet Dalan Koyu, çam ağaçları, berrak denizi ve huzurlu atmosferiyle ücretsiz kamp yapmaya uygun, bakir ve doğal bir güzelliktir.",
+          "source_info_link": "https://kampalanlari.tr/balikesir/ayvalik/cennet-dalan-koyu",
+          "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAtFBMVEVHcEwAAAAAAAAAAAAAAAAAAAADAwMAAAABAAAJBwAAAAAAAAAbGhwBAAAAAAA8LwAVDwCdMRUAAACPj5AAAAAPDAA4EQdOPQAmEASCgoQjIySbm5wAAAAAAABRUVEwMDBHR0hb6OTn4QBbWlvn5-rh4eMAAADBwcPk5Obi4uTc3N7S0tRJSE08Oz6HbAA0NDakpKXKysxUU1j_USO1ORm8mADt7fB2dne0tLa7u71mZmd0XgBhi3Z2AAAAInRSTlMANS3wHEu3pKyXi378yz_1Df7d_meF2fys_dT-5Vjg4Nf-Buq1CAAAAPBJREFUKJHFkMduwzAQREVLlEj14p4KiCWkouoq5___K3RiOAog-mZ4jvMwO7trGA8VnNyAs-cgQDrobTcbUwuZaQYaFjvejX2iSLtRjKuvmQ6CxW4XWRq4XFRVhMeZ5edKbBza2Z6Q_WE0atWSCkGl-dsKX4YQPRHKW0pWP9E4nQ-uAj4VbXcqRLE-uzhJ3GHwQzS-3wuand10m_yVh28qk5f1SQq-BqpyvgRX6DRUHP2uY62QmfpwMHWvY-FrQWRZ5nldEsLfVYjZlyPCEK163rBPJXbk_QEDbKZeaE0sA9o2cv4JKQMhe-rC8X_dV9-sHBXN_jyiCgAAAABJRU5ErkJggg.png"
+        },
+        "languages": [
+          "tr"
+        ],
+        "regions": [
+          "TR"
+        ]
+      },
+      "about_page_link": "https://www.google.com/search?q=About+https://kampalanlari.tr/balikesir/ayvalik/cennet-dalan-koyu&tbm=ilp",
+      "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fkampalanlari.tr%2Fbalikesir%2Fayvalik%2Fcennet-dalan-koyu",
+      "source": "kampalanlari.tr"
+    },
+    {
+      "position": 4,
+      "title": "Cennet Dalan Koyu: Nerede, Nasıl Gidilir, Yorumlar | Geziyoo",
+      "link": "https://tr.pinterest.com/pin/cennet-dalan-koyu-kamp-alanayvalk--790170697124856279/",
+      "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://tr.pinterest.com/pin/cennet-dalan-koyu-kamp-alanayvalk--790170697124856279/&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQFnoECDAQAQ",
+      "displayed_link": "5 yıl önce",
+      "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAKlBMVEVHcEzmACPmACPmACPmACLmACPmACPmACPmACPmACPlACPmACPmACPmACNXoEKOAAAADXRSTlMAeg3EBduLpk9lJS7p902OrQAAALtJREFUKJG9UksWxCAIQ0XwU-9_3QHss1rH3bxhpYTEAAL8Ibw_AOhik4gOd8y1Ee6NhTZF-IYxEe-oaeZ-Ti9l1HuRPFESy3rDhZihmmJE4z5U7UHpHPp7l9QMUL0InSzdPKirMRc5k2RK16j2jJ9AFrCahtTQBFpKbGTIdrKuF0MMLRmFTOkxdM8VwUd1FZZWsHcI3lqndQidyvJkTvnaFqNKCfi8lgoHTJVLOi1bRoHh-E16wemD_TQ-ta8LyZ7XxUgAAAAASUVORK5CYII.png",
+      "snippet": "Cennet Dalan Koyu Kamp Alanı Ayvalık ücretsiz kamp rehberi. Güncel yol durumu, su/tuvalet imkanı, alan fotoğrafları, SSS cevapları ve gerçek ...",
+      "snippet_highlighted_words": [
+        "Cennet Dalan Koyu Kamp Alanı Ayvalık"
+      ],
+      "about_this_result": {
+        "source": {
+          "description": "Cennet Dalan Koyu Kamp Alanı Ayvalık ücretsiz kamp rehberi. Güncel yol durumu, su/tuvalet imkanı, alan fotoğrafları, SSS cevapları ve gerçek ...",
+          "source_info_link": "https://tr.pinterest.com/pin/cennet-dalan-koyu-kamp-alanayvalk--790170697124856279/",
+          "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAKlBMVEVHcEzmACPmACPmACPmACLmACPmACPmACPmACPmACPlACPmACPmACPmACNXoEKOAAAADXRSTlMAeg3EBduLpk9lJS7p902OrQAAALtJREFUKJG9UksWxCAIQ0XwU-9_3QHss1rH3bxhpYTEAAL8Ibw_AOhik4gOd8y1Ee6NhTZF-IYxEe-oaeZ-Ti9l1HuRPFESy3rDhZihmmJE4z5U7UHpHPp7l9QMUL0InSzdPKirMRc5k2RK16j2jJ9AFrCahtTQBFpKbGTIdrKuF0MMLRmFTOkxdM8VwUd1FZZWsHcI3lqndQidyvJkTvnaFqNKCfi8lgoHTJVLOi1bRoHh-E16wemD_TQ-ta8LyZ7XxUgAAAAASUVORK5CYII.png"
+        },
+        "languages": [
+          "tr"
+        ],
+        "regions": [
+          "TR"
+        ]
+      },
+      "about_page_link": "https://www.google.com/search?q=About+https://tr.pinterest.com/pin/cennet-dalan-koyu-kamp-alanayvalk--790170697124856279/&tbm=ilp",
+      "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Ftr.pinterest.com%2Fpin%2Fcennet-dalan-koyu-kamp-alanayvalk--790170697124856279%2F",
+      "source": "Pinterest · geziyooco"
+    },
+    {
+      "position": 5,
+      "title": "Cennet Dalan Koyu - Kamp ve Seyahat Rehberi - Yamaçta",
+      "link": "https://yamacta.com/mekanlar/cennet-dalan-koyu/",
+      "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://yamacta.com/mekanlar/cennet-dalan-koyu/&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQFnoECC8QAQ",
+      "displayed_link": "https://yamacta.com › Mekanlar",
+      "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAACAAAAAfCAMAAACxiD--AAAALVBMVEVHcEzvEkjwEUfwEUfwEkjwEkfxD0XwEkfwEkfwEkfwEEbwEUbwEUfvEkjvE0jf-Jq8AAAADnRSTlMA3F1u64kPr5XJLEZ695WnyMIAAADCSURBVCiRfVJLFoQwCMPSv9r7H3e0tSNBNLuY-CChRAaybwN7sOQ45ROWowi97U-9Sr35pyGBIVBMy4VU-wagt0hyo3wYAuiJCPimeKv6Azmgiw7VGKk7DCv-skk2Mnr8R610gMFQsiBxNLODQ4zMV3Uq-d1kndcDw71FeWt_mcPe7scyo7UFj-BOnhiibmOGegWr62BmN8o0X6OsNdqG_6xk6_f165sh65I0oi7pgaJL0ujX5A9DT_qln0nzp4EC6D8vvBqrD0jI1wAAAABJRU5ErkJggg.png",
+      "snippet": "Bu koylardan biri olan Cennet Dalan Koyu, Balıkesir'in Ayvalık ilçesi sınırları içerisinde yer alır. Koy, adının hakkını veren doğal güzelliğiyle dikkat çeker.",
+      "snippet_highlighted_words": [
+        "Balıkesir'in Ayvalık ilçesi sınırları içerisinde yer alır"
+      ],
+      "about_this_result": {
+        "source": {
+          "description": "Bu koylardan biri olan Cennet Dalan Koyu, Balıkesir'in Ayvalık ilçesi sınırları içerisinde yer alır. Koy, adının hakkını veren doğal güzelliğiyle dikkat çeker.",
+          "source_info_link": "https://yamacta.com/mekanlar/cennet-dalan-koyu/",
+          "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAACAAAAAfCAMAAACxiD--AAAALVBMVEVHcEzvEkjwEUfwEUfwEkjwEkfxD0XwEkfwEkfwEkfwEEbwEUbwEUfvEkjvE0jf-Jq8AAAADnRSTlMA3F1u64kPr5XJLEZ695WnyMIAAADCSURBVCiRfVJLFoQwCMPSv9r7H3e0tSNBNLuY-CChRAaybwN7sOQ45ROWowi97U-9Sr35pyGBIVBMy4VU-wagt0hyo3wYAuiJCPimeKv6Azmgiw7VGKk7DCv-skk2Mnr8R610gMFQsiBxNLODQ4zMV3Uq-d1kndcDw71FeWt_mcPe7scyo7UFj-BOnhiibmOGegWr62BmN8o0X6OsNdqG_6xk6_f165sh65I0oi7pgaJL0ujX5A9DT_qln0nzp4EC6D8vvBqrD0jI1wAAAABJRU5ErkJggg.png"
+        },
+        "languages": [
+          "tr"
+        ],
+        "regions": [
+          "TR"
+        ]
+      },
+      "about_page_link": "https://www.google.com/search?q=About+https://yamacta.com/mekanlar/cennet-dalan-koyu/&tbm=ilp",
+      "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fyamacta.com%2Fmekanlar%2Fcennet-dalan-koyu%2F",
+      "source": "yamacta.com"
+    },
+    {
+      "position": 6,
+      "title": "Cennet Dalan Koyu Kamp Alanı (Ayvalık,Balıkesir)",
+      "link": "https://kampolog.com/listing/cennet-dalan-koyu-kamp-alani/",
+      "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://kampolog.com/listing/cennet-dalan-koyu-kamp-alani/&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQFnoECDYQAQ",
+      "displayed_link": "https://kampolog.com › listing › cennet-dalan-koyu-ka...",
+      "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAANlBMVEVHcEwAvxkAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxpU5iN6AAAAEnRSTlMAECbG_zV420WS52Sl-hxR87Nw7RHsAAAAlElEQVR4AayQRQLDMBDEAooZ___YcpsYT52LQYZdLX_Kuk3gzpgdIIZQAiOmAPQAGgDWLrOABNeFHoQCQocJ4PX03oGAXZYIHA3TkD5VyUYcEJ-TCKgK5t8FA6lk2_lVBGxlnP10ga-Mn-1FSv-lGHP6bytUp_8oRAKMFUJr5_K-7wBCPKtK-PQM_pP0iu9Lvm8QAwDh_wUzdyNSYgAAAABJRU5ErkJggg.png",
+      "snippet": "Cennet Dalan Koyu Kamp Alanı Balıkesir Ayvalık'da yer alan Ücretsiz Kamp Alanlarından birisidir.Hem yüzme hem kafa dinleyerek kamp yapmak isteyenler için uygun ...",
+      "snippet_highlighted_words": [
+        "Balıkesir Ayvalık'da yer alan Ücretsiz Kamp Alanlarından birisidir"
+      ],
+      "about_this_result": {
+        "source": {
+          "description": "Cennet Dalan Koyu Kamp Alanı Balıkesir Ayvalık'da yer alan Ücretsiz Kamp Alanlarından birisidir.Hem yüzme hem kafa dinleyerek kamp yapmak isteyenler için uygun ...",
+          "source_info_link": "https://kampolog.com/listing/cennet-dalan-koyu-kamp-alani/",
+          "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAANlBMVEVHcEwAvxkAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxoAvxpU5iN6AAAAEnRSTlMAECbG_zV420WS52Sl-hxR87Nw7RHsAAAAlElEQVR4AayQRQLDMBDEAooZ___YcpsYT52LQYZdLX_Kuk3gzpgdIIZQAiOmAPQAGgDWLrOABNeFHoQCQocJ4PX03oGAXZYIHA3TkD5VyUYcEJ-TCKgK5t8FA6lk2_lVBGxlnP10ga-Mn-1FSv-lGHP6bytUp_8oRAKMFUJr5_K-7wBCPKtK-PQM_pP0iu9Lvm8QAwDh_wUzdyNSYgAAAABJRU5ErkJggg.png"
+        },
+        "languages": [
+          "tr"
+        ],
+        "regions": [
+          "TR"
+        ]
+      },
+      "about_page_link": "https://www.google.com/search?q=About+https://kampolog.com/listing/cennet-dalan-koyu-kamp-alani/&tbm=ilp",
+      "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fkampolog.com%2Flisting%2Fcennet-dalan-koyu-kamp-alani%2F",
+      "source": "kampolog.com"
+    },
+    {
+      "position": 7,
+      "title": "Ayvalık – Cennet Ada Koyu",
+      "link": "https://bizimayvalik.com.tr/ayvalik-cennet-ada-koyu/",
+      "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://bizimayvalik.com.tr/ayvalik-cennet-ada-koyu/&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQFnoECE8QAQ",
+      "displayed_link": "https://bizimayvalik.com.tr › Gezilesi",
+      "favicon": "https://serpapi.com/images/i/_9j_4AAQSkZJRgABAQAAAQABAAD_2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys_RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc1Nzc3NTc3Nzc3Nzc3Nzc3Nzc3Nzc3N__AABEIACAAIAMBIgACEQEDEQH_xAAZAAADAQEBAAAAAAAAAAAAAAADBQYEBwL_xAAsEAACAQIFAwMCBwAAAAAAAAABAgMEEQAFEiFBEyIxBlFhB3EUIzIzgZGx_8QAFwEAAwEAAAAAAAAAAAAAAAAAAAECA__EAB0RAAEEAgMAAAAAAAAAAAAAAAEAERIhAiIxMoH_2gAMAwEAAhEDEQA_AOzZhUSQRgRKNcl1Rm_SHt2g_c7YGtJUT62qp2USBCIoz-2RYmx5ufj4wKjVqqulmqqWWF41CAOwKuNRIawuONt9r8YzeoKrMoS0dGOmrxkxSgA94BJDX8bAnbE4iS366jlb8yopavpmKqeAo1-zzY7N_NibHg749UtajsIJzFDVcwdUMw2v_dt8ZclzBZ4BEIJFKkBBYm6EbN4soO9he9h77YPW_kVcE6iY9RxE4ihDbb2LHyAN-ecGQiXSGwgfFMT5vVZd9Q0o5DJJQTUzPKeIRdArnfcaiVvxfgC5b-oqtaGUSV6mSknj6EKoL6ZGDFi49tIAB47vfB_UWStmsUclLULS10NxHM0QkVkbZ43QkakYeRceAeMLMxopKLKYYqt2aCJwwALSrBYHu1t3BRe9jrN7WuNsViYm1GLPaeRUkojjlU9OdlBkW-2o-d9_8PjErWZlXVX1FoMuhkdaFIRJqBF5WQvrI9hcqpNt-4fIHmPq6CbpZbBmMtfWSr3R5TSSg25u4D2H2sfkYovTeTfgIzV1T9StnjRWPSEawxqO2JEBOlV9rm5JN8Il0GrX_9k.jpeg",
+      "snippet": "Balıkesir ilinin Ayvalık ilçesine bağlı olan Cennet Ada Koyu, Cunda'nın en güzel yerlerinden biri. Doğal güzellikleri ve tarihi yapılarıyla göz dolduran ...",
+      "snippet_highlighted_words": [
+        "Balıkesir ilinin Ayvalık ilçesine bağlı olan Cennet Ada Koyu"
+      ],
+      "about_this_result": {
+        "source": {
+          "description": "Balıkesir ilinin Ayvalık ilçesine bağlı olan Cennet Ada Koyu, Cunda'nın en güzel yerlerinden biri. Doğal güzellikleri ve tarihi yapılarıyla göz dolduran ...",
+          "source_info_link": "https://bizimayvalik.com.tr/ayvalik-cennet-ada-koyu/",
+          "icon": "https://serpapi.com/images/i/_9j_4AAQSkZJRgABAQAAAQABAAD_2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys_RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc1Nzc3NTc3Nzc3Nzc3Nzc3Nzc3Nzc3N__AABEIACAAIAMBIgACEQEDEQH_xAAZAAADAQEBAAAAAAAAAAAAAAADBQYEBwL_xAAsEAACAQIFAwMCBwAAAAAAAAABAgMEEQAFEiFBEyIxBlFhB3EUIzIzgZGx_8QAFwEAAwEAAAAAAAAAAAAAAAAAAAECA__EAB0RAAEEAgMAAAAAAAAAAAAAAAEAERIhAiIxMoH_2gAMAwEAAhEDEQA_AOzZhUSQRgRKNcl1Rm_SHt2g_c7YGtJUT62qp2USBCIoz-2RYmx5ufj4wKjVqqulmqqWWF41CAOwKuNRIawuONt9r8YzeoKrMoS0dGOmrxkxSgA94BJDX8bAnbE4iS366jlb8yopavpmKqeAo1-zzY7N_NibHg749UtajsIJzFDVcwdUMw2v_dt8ZclzBZ4BEIJFKkBBYm6EbN4soO9he9h77YPW_kVcE6iY9RxE4ihDbb2LHyAN-ecGQiXSGwgfFMT5vVZd9Q0o5DJJQTUzPKeIRdArnfcaiVvxfgC5b-oqtaGUSV6mSknj6EKoL6ZGDFi49tIAB47vfB_UWStmsUclLULS10NxHM0QkVkbZ43QkakYeRceAeMLMxopKLKYYqt2aCJwwALSrBYHu1t3BRe9jrN7WuNsViYm1GLPaeRUkojjlU9OdlBkW-2o-d9_8PjErWZlXVX1FoMuhkdaFIRJqBF5WQvrI9hcqpNt-4fIHmPq6CbpZbBmMtfWSr3R5TSSg25u4D2H2sfkYovTeTfgIzV1T9StnjRWPSEawxqO2JEBOlV9rm5JN8Il0GrX_9k.jpeg"
+        },
+        "languages": [
+          "tr"
+        ],
+        "regions": [
+          "TR"
+        ]
+      },
+      "about_page_link": "https://www.google.com/search?q=About+https://bizimayvalik.com.tr/ayvalik-cennet-ada-koyu/&tbm=ilp",
+      "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fbizimayvalik.com.tr%2Fayvalik-cennet-ada-koyu%2F",
+      "source": "bizimayvalik.com.tr"
+    },
+    {
+      "position": 8,
+      "title": "CENNET DALAN VE KİLLİK KOYU SUALTI GÖRÜNTÜLERİ",
+      "link": "https://www.youtube.com/watch?v=Eirx1TfdDcY",
+      "displayed_link": "250+ görüntüleme · 8 yıl önce",
+      "thumbnail": "https://i.ytimg.com/vi/Eirx1TfdDcY/mqdefault.jpg?sqp=-oaymwEFCJQBEFM&rs=AMzJL3l2Yb0hHGk5XyfFc4QnhDevj5Jy0A",
+      "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8_9hAAAAhUlEQVR4AWNwL_ChCFPHgP8MxqxA7ArEKVBcCcUNIAznI-RdQXrABgAZpv8ZjP6Tg0F6QQbsosCAXSADHmGVVPIC0jKEDHgAMuAbmgRE445D___feYzXIJBeBigH04BVW_9DAcgwqEGYaik2gGIvUByIlEbjDooTEiwps5GRlNmolpkowgBVP9wMSzSKGAAAAABJRU5ErkJggg.png",
+      "snippet": "Cunda Adasındaki ve İzmir'deki yaptığımız dalışları ufaktan derledim. Videoyu beğendiyseniz beğen butonuna tıklayarak beğenmeyi ve yeni ...",
+      "duration": "8:29",
+      "about_this_result": {
+        "source": {
+          "description": "Cunda Adasındaki ve İzmir'deki yaptığımız dalışları ufaktan derledim. Videoyu beğendiyseniz beğen butonuna tıklayarak beğenmeyi ve yeni ...",
+          "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8_9hAAAAhUlEQVR4AWNwL_ChCFPHgP8MxqxA7ArEKVBcCcUNIAznI-RdQXrABgAZpv8ZjP6Tg0F6QQbsosCAXSADHmGVVPIC0jKEDHgAMuAbmgRE445D___feYzXIJBeBigH04BVW_9DAcgwqEGYaik2gGIvUByIlEbjDooTEiwps5GRlNmolpkowgBVP9wMSzSKGAAAAABJRU5ErkJggg.png"
+        }
+      },
+      "about_page_link": "https://www.google.com/search?q=About+https://www.youtube.com/watch?v=Eirx1TfdDcY&tbm=ilp",
+      "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DEirx1TfdDcY",
+      "video_link": "https://encrypted-vtbn0.gstatic.com/video?q=tbn:ANd9GcTyjX8ZBCvKmwJPX0HyqxcsmVJnH93LTVrtoQ",
+      "source": "YouTube · Sezer Demir"
+    },
+    {
+      "position": 9,
+      "title": "Ayvalık'ın Doğa Harikası Kamp Alanları",
+      "link": "https://www.tourbulance.com.tr/ayvalik-kamp-alanlari/",
+      "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.tourbulance.com.tr/ayvalik-kamp-alanlari/&ved=2ahUKEwizl-WFsqCWAxUlM1kFHR6nD9cQFnoECF0QAQ",
+      "displayed_link": "https://www.tourbulance.com.tr › ayvalik-kamp-alanlari",
+      "date": "17 Oca 2024",
+      "snippet": "Cennet Dalan Koyu, özellikleri ve kolay ulaşımı ile Ayvalık'ın sakin ve huzurlu bir kamp deneyimi arayanlar için mükemmel bir seçenektir. Doğal ...",
+      "snippet_highlighted_words": [
+        "özellikleri ve kolay ulaşımı ile Ayvalık'ın sakin ve huzurlu bir kamp deneyimi"
+      ],
+      "about_this_result": {
+        "source": {
+          "description": "Cennet Dalan Koyu, özellikleri ve kolay ulaşımı ile Ayvalık'ın sakin ve huzurlu bir kamp deneyimi arayanlar için mükemmel bir seçenektir. Doğal ...",
+          "source_info_link": "https://www.tourbulance.com.tr/ayvalik-kamp-alanlari/"
+        },
+        "languages": [
+          "tr"
+        ],
+        "regions": [
+          "TR"
+        ]
+      },
+      "about_page_link": "https://www.google.com/search?q=About+https://www.tourbulance.com.tr/ayvalik-kamp-alanlari/&tbm=ilp",
+      "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fwww.tourbulance.com.tr%2Fayvalik-kamp-alanlari%2F",
+      "source": "Tourbulance"
+    }
+  ],
+  "pagination": {
+    "current": 1,
+    "next": "https://www.google.com/search?q=Cennet+Dalan+Koyu&oq=Cennet+Dalan+Koyu&hl=tr&gl=tr&start=10&sourceid=chrome&ie=UTF-8",
+    "other_pages": {
+      "2": "https://www.google.com/search?q=Cennet+Dalan+Koyu&oq=Cennet+Dalan+Koyu&hl=tr&gl=tr&start=10&sourceid=chrome&ie=UTF-8",
+      "3": "https://www.google.com/search?q=Cennet+Dalan+Koyu&oq=Cennet+Dalan+Koyu&hl=tr&gl=tr&start=20&sourceid=chrome&ie=UTF-8",
+      "4": "https://www.google.com/search?q=Cennet+Dalan+Koyu&oq=Cennet+Dalan+Koyu&hl=tr&gl=tr&start=30&sourceid=chrome&ie=UTF-8",
+      "5": "https://www.google.com/search?q=Cennet+Dalan+Koyu&oq=Cennet+Dalan+Koyu&hl=tr&gl=tr&start=40&sourceid=chrome&ie=UTF-8"
+    }
+  },
+  "serpapi_pagination": {
+    "current": 1,
+    "next_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr&q=Cennet+Dalan+Koyu&start=10",
+    "next": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr&q=Cennet+Dalan+Koyu&start=10",
+    "other_pages": {
+      "2": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr&q=Cennet+Dalan+Koyu&start=10",
+      "3": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr&q=Cennet+Dalan+Koyu&start=20",
+      "4": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr&q=Cennet+Dalan+Koyu&start=30",
+      "5": "https://serpapi.com/search.json?device=desktop&engine=google&gl=tr&google_domain=google.com&hl=tr&q=Cennet+Dalan+Koyu&start=40"
+    }
+  }
+}

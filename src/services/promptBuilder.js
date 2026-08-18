@@ -20,13 +20,58 @@ function estimateTokens(text) {
 class WeatherModule {
   get id() { return 'weather'; }
 
+  /**
+   * Yağış olasılığını hava durumu açıklamasıyla birlikte değerlendirerek
+   * daha gerçekçi bir kategorizasyon yapar
+   */
+  evaluateRainRisk(pop, condition) {
+    const rainProb = pop ?? 0;
+    const conditionLower = String(condition ?? '').toLowerCase();
+    
+    // Hava durumu açıklamasında yağış belirten kelimeler
+    const heavyRainKeywords = ['sağanak', 'saganak', 'şiddetli', 'siddetli', 'fırtına', 'firtina', 'dolu'];
+    const rainKeywords = ['yağmur', 'yagmur', 'yağış', 'yagis', 'sulu'];
+    const cloudKeywords = ['bulutlu', 'kapalı', 'kapali', 'sisli'];
+    
+    const hasHeavyRain = heavyRainKeywords.some(kw => conditionLower.includes(kw));
+    const hasRain = rainKeywords.some(kw => conditionLower.includes(kw));
+    const hasClouds = cloudKeywords.some(kw => conditionLower.includes(kw));
+    
+    // Yağış riski kategorileri
+    if (hasHeavyRain || rainProb >= 70) {
+      return 'YUKSEK_RISK'; // Kesin yağış bekleniyor
+    } else if (hasRain && rainProb >= 40) {
+      return 'ORTA_RISK'; // Yağış muhtemel
+    } else if ((hasRain && rainProb >= 20) || (hasClouds && rainProb >= 50)) {
+      return 'DUSUK_RISK'; // Az yağış olasılığı
+    } else if (rainProb <= 15) {
+      return 'COK_DUSUK'; // Yağış riski çok düşük
+    } else {
+      return 'MINIMAL'; // Minimal risk
+    }
+  }
+
   buildPrompt(ctx) {
     const days = ctx.weather?.days;
     if (!days?.length) return null;
 
-    const rows = days.slice(0, 4).map(d =>
-      `${d.date}: ${d.maxTemp ?? d.max_temp_c ?? '?'}/${d.minTemp ?? d.min_temp_c ?? '?'}C yagis%${d.pop ?? d.daily_chance_of_rain ?? 0} ruzgar${d.wind_kph ?? d.maxwind_kph ?? 0}km/h ${d.text ?? d.condition ?? ''}`
-    );
+    const rows = days.slice(0, 4).map(d => {
+      const pop = d.pop ?? d.daily_chance_of_rain ?? 0;
+      const condition = d.text ?? d.condition ?? '';
+      const riskLevel = this.evaluateRainRisk(pop, condition);
+      
+      // Risk seviyesine göre Türkçe açıklama
+      const riskLabels = {
+        'YUKSEK_RISK': '⚠️ Kesin yağış',
+        'ORTA_RISK': '☔ Yağış muhtemel',
+        'DUSUK_RISK': '🌦️ Az yağış olasılığı',
+        'COK_DUSUK': '☀️ Yağış riski düşük',
+        'MINIMAL': '⛅ Minimal risk'
+      };
+      
+      return `${d.date}: ${d.maxTemp ?? d.max_temp_c ?? '?'}/${d.minTemp ?? d.min_temp_c ?? '?'}C yagis%${pop} ${riskLabels[riskLevel]} ruzgar${d.wind_kph ?? d.maxwind_kph ?? 0}km/h ${condition}`;
+    });
+    
     return `[HAVA]\n${rows.join('\n')}`;
   }
 }
@@ -272,6 +317,30 @@ class WebResearchModule {
   }
 }
 
+class AIOverviewModule {
+  get id() { return 'aiOverview'; }
+
+  buildPrompt(ctx) {
+    const ao = ctx.aiOverview;
+    if (!ao || !ao.aiOverview) return null;
+
+    const lines = [];
+    lines.push('[GOOGLE_AI_OZETI]');
+    
+    // AI Overview metni
+    lines.push(ao.aiOverview);
+
+    // İlgili sorular (varsa)
+    if (ao.relatedQuestions && ao.relatedQuestions.length > 0) {
+      lines.push('');
+      lines.push('Sikca Sorulan Sorular:');
+      ao.relatedQuestions.forEach(q => lines.push(`- ${q}`));
+    }
+
+    return lines.join('\n');
+  }
+}
+
 const SYSTEM_PROMPT = `Sen deneyimli bir kamp rehberi, seyahat planlayicisi ve outdoor uzmansin.
 Kullanicinin kamp planina gore DETAYLI, GERCEKCI ve PRATIK analiz yap.
 Amac: Sahada ise yarayan kritik detaylari vermek.
@@ -280,8 +349,14 @@ Yanit formatin:
 
 1. HAVA DURUMU ANALIZI
 - Gun gun sicaklik (gunduz/gece), ruzgar, nem
-- Kamp etki yorumu (usume, cadir ici nem vb.)
-- Ekipman onerisi (uyku tulumu, mat vs.)
+- Yagis Risk Degerlendirmesi:
+  • ⚠️ Kesin yağış: Sağanak/şiddetli yağış bekleniyor, kamp planını gözden geçir
+  • ☔ Yağış muhtemel: Su geçirmez ekipman ve B planı hazırla
+  • 🌦️ Az yağış olasılığı: Yağmurluk yanında olsun
+  • ☀️ Yağış riski düşük: İdeal kamp havası
+  • ⛅ Minimal risk: Güvenli
+- Kamp etki yorumu (usume, cadir ici nem, zemin islaklik vb.)
+- Ekipman onerisi (uyku tulumu, mat, yagmurluk vs.)
 
 2. YOL DURUMU VE ROTA ANALIZI
 - Tahmini sure, kritik noktalar, yol kalitesi
@@ -307,12 +382,14 @@ Yanit formatin:
 
 6. KRITIK SAHA TAVSIYELERI
 - Ruzgar, zemin, guvenlik, hayvanlar
+- Yagis riskine gore ozel onlemler (drenaj, cadir yeri secimi, ekstra branda vb.)
 - Bilinmezse sorun yasanir maddeleri
 
 Kurallar:
 - Madde madde ama aciklayici yaz
 - Deneyimli kampci gibi konus
 - Riskleri ozellikle belirt
+- Yagis risk ikonlarini ve kategorilerini kullanarak gercekci degerlendirme yap
 - Net oneri yap
 - ONEMLI: Konaklama turu ne ise (cadir, bungalov, karavan vb.) tum analiz O TURUNE gore yap. Baska tur icin ekipman veya oneri yapma.
 - 3a bolumu yalnizca [ALAN_SAYFASI] verisi varsa yaz; yoksa atla.
@@ -352,11 +429,20 @@ ZORUNLU ALANLAR:
 - stats: 3-5 adet ozet metrik (sicaklik, yagis, ruzgar, mesafe vb.)
   Ornek: {"icon":"Thermometer","label":"Sicaklik","value":"18°C","severity":"good"}
 
+YAGIS RISK DEGERLENDIRMESI:
+[HAVA] verisinde yer alan yagis risk ikonlarini kullan:
+- ⚠️ Kesin yağış: severity="danger", kritik uyari ekle
+- ☔ Yağış muhtemel: severity="warning", hazirlik onerileri
+- 🌦️ Az yağış olasılığı: severity="info", yagmurluk onerisi
+- ☀️ Yağış riski düşük: severity="good", ideal kamp havasi
+- ⛅ Minimal risk: severity="good", guvenli
+
 KATEGORILER (sirayla):
 1. icon:"CloudSun" title:"Hava Durumu Analizi" isWeather:true severity:hava riskine gore
    highlight: ortalama sicaklik
    - weather-day itemlari (date:"17.04.2026" formatinda, dayTemp/nightTemp Celsius, rain 0-100, wind km/s, condition Turkce)
-   - Ekipman onerileri bullet
+   - Yagis riski varsa mutlaka alert item ekle (risk seviyesine gore severity ayarla)
+   - Ekipman onerileri bullet (yagis riskine gore su gecirmez ekipman, branda vb. ekle)
    - Risk varsa alert
 2. icon:"Navigation" title:"Yol ve Rota" isWeather:false severity:yol durumuna gore
    highlight: tahmini sure
@@ -375,14 +461,15 @@ KATEGORILER (sirayla):
 5. icon:"MapPin" title:"Alternatif Alanlar" isWeather:false — YALNIZCA [ALTERNATIF] verisi varsa uret
    - Her alan key-value (label: ad, value: mesafe+puan)
 6. icon:"ShoppingBag" title:"Temel Ihtiyaclar" isWeather:false
-   - Gerekli malzemeler bullet
+   - Gerekli malzemeler bullet (yagis riskine gore ekstra ekipman onerisi dahil)
 7. icon:"AlertTriangle" title:"Kritik Tavsiyeler" isWeather:false severity:"warning"
-   - Uyarilar alert
+   - Uyarilar alert (yagis riski yuksekse drenaj, cadir yeri secimi onerileri)
    - Tavsiyeler bullet
 
 KURALLAR:
 - Konaklama turu ne ise TUM analiz O TURUNE gore yap
 - Riskler mutlaka alert ile belirt
+- Yagis risk seviyelerini dikkate alarak gercekci degerlendirme yap
 - Veri olmayan kategorileri EKLEME (site_details, alternatives)
 - [WEB_ARASTIRMA] verisi varsa: Google rating degerini 4. kategoride rating item olarak, Google yorumlarindaki tekrar eden temaları bullet item olarak ekle
 - Sadece gecerli JSON don
@@ -548,5 +635,6 @@ module.exports = {
   BookingUrlModule,
   CampgroundDetailModule,
   WebResearchModule,
+  AIOverviewModule,
   estimateTokens,
 };

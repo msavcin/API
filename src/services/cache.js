@@ -40,6 +40,16 @@ class InMemoryCache {
     this._store.delete(key);
   }
 
+  async keys(pattern) {
+    // Simple pattern matching: ai_overview:* gibi
+    if (!pattern || pattern === '*') {
+      return Array.from(this._store.keys());
+    }
+    
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+    return Array.from(this._store.keys()).filter(k => regex.test(k));
+  }
+
   _sweep() {
     const now = Date.now();
     for (const [key, entry] of this._store.entries()) {
@@ -94,6 +104,16 @@ class RedisCache {
       await this._client.del(key);
     } catch (err) {
       console.warn('[CACHE] Redis del hatası:', err.message);
+    }
+  }
+
+  async keys(pattern) {
+    try {
+      await this._ensureReady();
+      return await this._client.keys(pattern || '*');
+    } catch (err) {
+      console.warn('[CACHE] Redis keys hatası:', err.message);
+      return [];
     }
   }
 }
