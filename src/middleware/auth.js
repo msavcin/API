@@ -29,6 +29,37 @@ function authMiddleware(req, res, next) {
   });
 }
 
+/**
+ * Opsiyonel auth: Eğer Authorization header varsa doğrula ve `req.user` ata,
+ * yoksa `req.user = null` bırak ve devam et. Böylece public erişim gereken
+ * endpoint'lerde token zorunlu kılınmaz, fakat token varsa doğrulanır.
+ */
+function optionalAuthMiddleware(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  if (typeof token !== 'string' || token.length < 10) {
+    console.warn('[AUTH][JWT] Opsiyonel auth: geçersiz token formatı');
+    req.user = null;
+    return next();
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      console.warn('[AUTH][JWT] Opsiyonel auth - token doğrulama hatası:', err && err.name);
+      req.user = null;
+      return next();
+    }
+    req.user = user;
+    next();
+  });
+}
+
 async function leaderMiddleware(req, res, next) {
   console.log('[LEADER_MIDDLEWARE] Başlangıç', { user: req.user, body: req.body, params: req.params });
   const db = require('../models');
@@ -80,4 +111,4 @@ function guestRestrictionMiddleware(req, res, next) {
   next();
 }
 
-module.exports = { authMiddleware, leaderMiddleware, guestRestrictionMiddleware };
+module.exports = { authMiddleware, optionalAuthMiddleware, leaderMiddleware, guestRestrictionMiddleware };

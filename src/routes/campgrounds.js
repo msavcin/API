@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const campgroundController = require('../controllers/campgroundController');
-const { authMiddleware, guestRestrictionMiddleware } = require('../middleware/auth');
+const { authMiddleware, optionalAuthMiddleware, guestRestrictionMiddleware } = require('../middleware/auth');
 
-// 1. Kamp Alanı Ekle (guest erişimi serbest)
+// 1. Kamp Alanı Ekle (authenticated required)
 router.post('/', authMiddleware, campgroundController.createCampground);
-// 2. Kamp Alanı Listele (guest erişimi engellenir)
-router.get('/', authMiddleware, campgroundController.listCampgrounds);
-// 3. Kamp Alanı Detay (guest erişimi engellenir)
-router.get('/:id', authMiddleware, campgroundController.getCampground);
+// 2. Kamp Alanı Listele (opsiyonel auth — sync için token zorunlu değil)
+router.get('/', optionalAuthMiddleware, campgroundController.listCampgrounds);
+// 3. Kamp Alanı Detay (opsiyonel auth)
+router.get('/:id', optionalAuthMiddleware, campgroundController.getCampground);
 // 4. Kamp Alanı Zenginleştir
 router.post('/:id/enrich', authMiddleware, campgroundController.enrichCampground);
 // 5. Kamp Alanı Sil (guest erişimi engellenir)

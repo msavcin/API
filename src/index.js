@@ -46,7 +46,7 @@ app.use('/node/announcements', bodyParser.json(), require('./routes/announcement
 app.use('/node/campgrounds', bodyParser.json(), require('./routes/campgrounds'));
 app.use('/node/campground_images', bodyParser.json(), require('./routes/campground_images'));
 app.use('/node/seasons', bodyParser.json(), require('./routes/seasons'));
-app.use('/node/camping_types', bodyParser.json(), require('./routes/campingTypes'));
+app.use('/node/camping_types', bodyParser.json({ limit: '256kb' }), require('./routes/campingTypes'));
 app.use('/node/standard_checklists', bodyParser.json(), require('./routes/standardChecklists'));
 app.use('/node/custom_checklists', bodyParser.json(), require('./routes/customChecklists'));
 app.use('/node/friends', bodyParser.json(), require('./routes/friends'));

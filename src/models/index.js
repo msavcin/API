@@ -76,6 +76,7 @@ ChecklstShare.belongsTo(CustomChecklist, { foreignKey: 'checklist_id', as: 'cust
 CustomChecklist.belongsTo(User, { foreignKey: 'user_id', as: 'owner' });
 
 const CampgroundFriendAccess = require('./campgroundFriendAccess');
+const CampingType = require('./campingType');
 const Rating = require('./rating');
 const ChatConversation = require('./chatConversation');
 const ChatMessage = require('./chatMessage');
@@ -93,6 +94,7 @@ module.exports = {
   CustomChecklist,
   PasswordReset,
   CampgroundFriendAccess,
+  CampingType,
   Rating,
   ChatConversation,
   ChatMessage,

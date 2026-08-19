@@ -29,6 +29,8 @@ const User = sequelize.define('User', {
   // AI değerlendirme günlük kullanım sayacı
   ai_eval_count: { type: DataTypes.INTEGER, defaultValue: 0 },
   ai_eval_count_date: { type: DataTypes.DATEONLY, allowNull: true },
+  // User preferences stored as JSON/JSONB
+  preferences: { type: DataTypes.JSONB || DataTypes.JSON, allowNull: true, defaultValue: {} },
 }, {
   tableName: 'users',
   timestamps: true,

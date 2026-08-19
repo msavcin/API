@@ -275,6 +275,7 @@ exports.getMe = async (req, res) => {
       name: user.name,
       username: user.username,
       email: user.email,
+      preferences: user.preferences || null,
       community_id: member ? member.community_id : null,
       role: user.role === 'superadmin' ? 'superadmin' : (member ? member.role : user.role),
       avatar_url: user.avatar_url || null,
@@ -385,7 +386,7 @@ exports.patchMe = async (req, res) => {
   const db = require('../models');
   const User = db.User || require('../models/user');
   const userId = req.user.id;
-  const allowedFields = ['name', 'username', 'email', 'avatar_url'];
+  const allowedFields = ['name', 'username', 'email', 'avatar_url', 'preferences'];
   const updates = {};
   for (const field of allowedFields) {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
@@ -396,6 +397,12 @@ exports.patchMe = async (req, res) => {
   try {
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    // Validate preferences if provided
+    if (updates.preferences !== undefined) {
+      if (typeof updates.preferences !== 'object' || updates.preferences === null) {
+        return res.status(400).json({ error: 'preferences must be an object' });
+      }
+    }
   await user.update(updates);
   console.log('Güncellenen user.avatar_url:', user.avatar_url);
   res.json({ id: user.id, name: user.name, username: user.username, email: user.email, avatar_url: user.avatar_url });

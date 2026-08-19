@@ -33,6 +33,22 @@ exports.getAppConfig = async (req, res) => {
       map[setting.key] = setting.value;
     });
 
+    // Include global checklist visibility map if set (JSON stored in app_settings.value)
+    try {
+      const cv = await db.AppSetting.findOne({ where: { key: 'checklist_visible_types' } });
+      if (cv && cv.value) {
+        try {
+          map.checklist_visible_types = JSON.parse(cv.value);
+        } catch (e) {
+          map.checklist_visible_types = {};
+        }
+      } else {
+        map.checklist_visible_types = {};
+      }
+    } catch (e) {
+      map.checklist_visible_types = {};
+    }
+
     const nonPremiumLimit = parseInt(map.non_premium_camping_area_limit || '10', 10);
 
     res.json({
@@ -46,6 +62,7 @@ exports.getAppConfig = async (req, res) => {
         app_update_message: map.app_update_message || PUBLIC_APP_SETTING_DEFAULTS.app_update_message,
         app_update_android_url: map.app_update_android_url || PUBLIC_APP_SETTING_DEFAULTS.app_update_android_url,
         app_update_ios_url: map.app_update_ios_url || PUBLIC_APP_SETTING_DEFAULTS.app_update_ios_url,
+        checklist_visible_types: map.checklist_visible_types || {},
       }
     });
   } catch (error) {
