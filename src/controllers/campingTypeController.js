@@ -112,6 +112,60 @@ async function findByIdOrCode(value) {
   return CampingType.findOne({ where: { code: normalizeCode(raw) } });
 }
 
+const CAMPING_TYPE_ALIAS_GROUPS = [
+  ['campground', 'tent', 'legacy_1', '1'],
+  ['caravan_site', 'caravan', 'legacy_2', '2'],
+  ['hiking_road', 'nature', 'legacy_3', '3'],
+];
+
+function aliasGroupFor(value) {
+  const key = String(value == null ? '' : value).trim().toLowerCase();
+  if (!key) return [];
+  const group = CAMPING_TYPE_ALIAS_GROUPS.find((g) => g.includes(key));
+  return group ? [...group] : [key];
+}
+
+function preferredCanonicalCode(value) {
+  const group = aliasGroupFor(value);
+  if (group.includes('campground')) return 'campground';
+  if (group.includes('caravan_site')) return 'caravan_site';
+  if (group.includes('hiking_road')) return 'hiking_road';
+  return group[0] || String(value || '');
+}
+
+async function findCanonicalReplacement(type) {
+  const canonical = preferredCanonicalCode(type.code || type.id);
+  if (!canonical || String(type.code) === canonical) return null;
+  const replacement = await CampingType.findOne({ where: { code: canonical } });
+  if (!replacement || Number(replacement.id) === Number(type.id)) return null;
+  return replacement;
+}
+
+async function reassignStandardChecklists(fromType, toType) {
+  if (!fromType || !toType || Number(fromType.id) === Number(toType.id)) {
+    return { updated: 0 };
+  }
+  const tokens = new Set(
+    [String(fromType.id), String(fromType.code), ...aliasGroupFor(fromType.code), ...aliasGroupFor(fromType.id)]
+      .map((v) => String(v || '').trim())
+      .filter(Boolean)
+  );
+  try {
+    const [meta] = await sequelize.query(
+      `UPDATE standard_checklists
+       SET camping_type_id = :newId
+       WHERE camping_type_id::text IN (:tokens)`,
+      { replacements: { newId: String(toType.id), tokens: [...tokens] } }
+    );
+    const updated = Number(meta?.rowCount ?? meta ?? 0);
+    console.log(`[campingTypes] standard_checklists taşındı: ${[...tokens].join(',')} -> ${toType.id} (${updated})`);
+    return { updated };
+  } catch (error) {
+    console.warn('[campingTypes] standard_checklists taşıma atlandı:', error.message);
+    return { updated: 0, error: error.message };
+  }
+}
+
 async function countUsage(type) {
   const code = String(type.code);
   const idText = String(type.id);
@@ -318,10 +372,15 @@ exports.deleteCampingType = async (req, res) => {
     const type = await findByIdOrCode(req.params.idOrCode);
     if (!type) return res.status(404).json({ error: 'Kamp türü bulunamadı' });
 
+    const replacement = await findCanonicalReplacement(type);
+    if (replacement) {
+      await reassignStandardChecklists(type, replacement);
+    }
+
     const usage = await countUsage(type);
     const inUse = usage.campgrounds > 0 || usage.standard_checklists > 0;
     const force = req.query.force === 'true' || req.body?.force === true;
-    if (inUse && !force) {
+    if (inUse && !force && !replacement) {
       return res.status(409).json({
         error: 'Bu kamp türü kullanılıyor. Önce bağlı kayıtları taşıyın veya force=true ile pasifleştirin.',
         usage,
@@ -330,9 +389,15 @@ exports.deleteCampingType = async (req, res) => {
     }
 
     await type.update({ active: false, deleted_at: new Date(), updated_at: new Date() });
-    return res.json({ success: true, usage, campingType: normalizeType(type, req) });
+    return res.json({
+      success: true,
+      usage,
+      reassigned_to: replacement ? normalizeType(replacement, req) : null,
+      campingType: normalizeType(type, req),
+    });
   } catch (error) {
     console.error('[campingTypes] delete hata:', error);
-    return res.status(500).json({ error: 'Kamp türü kaldırılamadı' });
+    const detail = error?.parent?.detail || error?.original?.detail || error.message;
+    return res.status(500).json({ error: 'Kamp türü kaldırılamadı', detail });
   }
 };
